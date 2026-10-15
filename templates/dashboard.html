@@ -170,7 +170,7 @@
   var tafelRahmen = document.getElementById('tafel-rahmen');
   var detailPanel = document.getElementById('detail-panel');
   var detailRahmen = document.getElementById('detail-rahmen');
-  var detailSid = null;
+  var detailSid = null, detailNr = null;
 
   function modusSetzen(m) {
     tafelModus = m || null;
@@ -197,16 +197,38 @@
     document.getElementById('detail-name').textContent = s ? s.pseudonym : '';
     var box = document.getElementById('detail-aktionen');
     box.innerHTML = '';
-    ((s && s.vorstellen) || []).forEach(function (v) {
-      var b = el('button', 'mini gruen', '🖍️ Aufgabe ' + v.nr + ' an die Tafel');
-      b.type = 'button';
-      b.addEventListener('click', function () { anDieTafel(s.id, v.nr); });
-      box.appendChild(b);
-    });
+    if (!s) { return; }
+    var meldet = (s.vorstellen || []).map(function (v) { return v.nr; });
+    if (!detailNr) { detailNr = meldet[0] || '1'; }
+    // Eine beliebige Aufgabe dieser Person an die Tafel holen – ✋ = hat sich zum Vorstellen gemeldet
+    var wahl = el('select', 'detail-wahl');
+    wahl.setAttribute('aria-label', 'Aufgabe');
+    for (var i = 1; i <= ANZAHL_AUFGABEN; i++) {
+      var o = el('option', '', 'Aufgabe ' + i + (meldet.indexOf(String(i)) >= 0 ? ' ✋' : ''));
+      o.value = String(i);
+      wahl.appendChild(o);
+    }
+    wahl.value = detailNr;
+    wahl.addEventListener('change', function () { detailNr = wahl.value; });
+    box.appendChild(wahl);
+    var an = el('button', 'mini gruen', '🖍️ An die Tafel');
+    an.type = 'button';
+    an.title = 'Diese Person mit der Aufgabe an die Tafel holen (die bisher Zugeschalteten gehen zurück)';
+    an.addEventListener('click', function () { anDieTafel(s.id, wahl.value); });
+    box.appendChild(an);
+    if (tafelLive) {                                   // läuft die Tafel schon: weitere Person zusätzlich zuschalten
+      var z = el('button', 'mini', '➕ Dazuholen');
+      z.type = 'button';
+      z.title = 'Die Tafel läuft: diese Person zusätzlich zuschalten – die bisherigen bleiben dran';
+      z.addEventListener('click', function () { anDieTafel(s.id, wahl.value, true); });
+      box.appendChild(z);
+    }
   }
   function detailOeffnen(url) {
     var m = /\/lehrer\/schueler\/([^#?]+)/.exec(url);
     detailSid = m ? decodeURIComponent(m[1]) : null;
+    var an = /#aufgabe-(\d+)/.exec(url);
+    detailNr = an ? an[1] : null;
     detailRahmen.setAttribute('src', url);
     detailPanel.hidden = false;
     document.body.classList.add('detail-offen');
@@ -216,7 +238,7 @@
     detailPanel.hidden = true;
     detailRahmen.removeAttribute('src');
     document.body.classList.remove('detail-offen');
-    detailSid = null;
+    detailSid = null; detailNr = null;
   }
   document.getElementById('detail-zurueck').addEventListener('click', detailSchliessen);
   // Ein Klick auf Name oder Aufgabe öffnet das AB hier (Strg/Cmd-Klick: wie gewohnt in neuem Tab)
@@ -238,13 +260,13 @@
     }
   });
 
-  function anDieTafel(sid, nr) {
-    socket.emit('vorstellen_tafel', { schueler_id: sid, aufgabe: nr }, function (res) {
+  function anDieTafel(sid, nr, weitere) {
+    socket.emit('vorstellen_tafel', { schueler_id: sid, aufgabe: nr, weitere: !!weitere }, function (res) {
       if (res && res.ok) {
         detailSchliessen();
         tafelOeffnen();
       } else if (res && res.fehler === 'leer') {
-        alert('In dieser Aufgabe steht noch nichts – da gibt es nichts vorzustellen.');
+        alert('In dieser Aufgabe steht noch nichts – hier gibt es nichts anzuzeigen.');
       } else { alert('Das war gerade nicht möglich.'); }
     });
   }

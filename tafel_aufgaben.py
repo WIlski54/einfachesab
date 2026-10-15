@@ -21,10 +21,23 @@ KNOPF = "an die Tafel"
 # mc:          frage, optionen, loesung
 # richtigfalsch: aussagen [(Text, "richtig"|"falsch")]
 # freitext:    frage
+def _schalen(*zahlen):
+    """„2,1“ darf auch als „2 1“, „2-1“, „2/1“ … geschrieben werden."""
+    return [t.join(str(z) for z in zahlen) for t in (",", ", ", " ", "-", "/", ";", "|", ".")]
+
+
+# Die Tafel-Fassungen entsprechen dem AB (gleiche Felder, gleiche Reihenfolge wie in ab_inhalt.html): Was eine Person
+# im AB eingetragen hat, steht an der Tafel schon in den Feldern und lässt sich dort per Tastatur ergänzen.
+# (Aufgabe 4 – Schalenmodell – hat keine Tafel-Fassung; sie kommt als Karte mit der gesetzten Elektronenzahl.)
 VARIANTEN = {
-    "1": {"titel": "Aufgabe 1 · Die Bausteine des Atoms", "typ": "zuordnung",
-          "links": ["Proton", "Neutron", "Elektron"], "optionen": ["positiv", "neutral", "negativ"],
-          "loesung": {"Proton": "positiv", "Neutron": "neutral", "Elektron": "negativ"}},
+    "1": {"titel": "Aufgabe 1 · Die Bausteine des Atoms", "typ": "lueckentext",
+          "teile": ["Proton (p⁺) – Ladung: ", None, ", Ort im Atom: ", None, ". Neutron (n) – Ladung: ", None,
+                    ", Ort im Atom: ", None, ". Elektron (e⁻) – Ladung: ", None, ", Ort im Atom: ", None, "."],
+          "loesung": [["positiv", "+", "1+", "einfach positiv"], ["Kern", "Atomkern", "im Kern", "im Atomkern"],
+                      ["neutral", "keine", "ungeladen", "0"], ["Kern", "Atomkern", "im Kern", "im Atomkern"],
+                      ["negativ", "-", "1-", "einfach negativ"], ["Hülle", "Atomhülle", "Elektronenhülle",
+                                                                   "in der Hülle", "in der Atomhülle"]],
+          "wortbank": ["positiv", "neutral", "negativ", "Kern", "Hülle"]},
     "2": {"titel": "Aufgabe 2 · Lückentext", "typ": "lueckentext",
           "teile": ["Ein Atom besteht aus dem ", None, " und der ", None, ". Im Kern befinden sich die ", None,
                     " und die ", None, ". Die Ordnungszahl eines Elements gibt die Anzahl der ", None,
@@ -32,16 +45,26 @@ VARIANTEN = {
           "loesung": [["Kern", "Atomkern"], ["Hülle", "Atomhülle", "Elektronenhülle"],
                       ["Protonen", "Neutronen"], ["Neutronen", "Protonen"], ["Protonen"], ["Elektronen"]],
           "wortbank": ["Kern", "Hülle", "Protonen", "Neutronen", "Elektronen", "Ionen"]},
-    "3": {"titel": "Aufgabe 3 · Das Natrium-Atom", "typ": "mc",
-          "frage": "Wie viele Neutronen hat ein Natrium-Atom (Ordnungszahl 11, Massenzahl 23)?",
-          "optionen": ["11", "12", "23", "34"], "loesung": "12"},
-    "5": {"titel": "Aufgabe 5 · Periodensystem", "typ": "richtigfalsch",
-          "aussagen": [["Lithium (Li) ist ein Alkalimetall.", "richtig"],
-                       ["Kohlenstoff (C) ist ein Alkalimetall.", "falsch"],
-                       ["Magnesium (Mg) ist ein Alkalimetall.", "falsch"],
-                       ["Kalium (K) ist ein Alkalimetall.", "richtig"]]},
+    "3": {"titel": "Aufgabe 3 · Das Natrium-Atom", "typ": "lueckentext",
+          "teile": ["Natrium: Ordnungszahl 11, Massenzahl 23. Protonen: ", None, "  Neutronen: ", None,
+                    "  Elektronen: ", None, "  K-Schale: ", None, "  L-Schale: ", None, "  M-Schale: ", None],
+          "loesung": [["11"], ["12"], ["11"], ["2"], ["8"], ["1"]],
+          "wortbank": ["1", "2", "8", "11", "12", "23"]},
+    "5": {"titel": "Aufgabe 5 · Periodensystem", "typ": "lueckentext",
+          "teile": ["Lithium (Li, 3) – Elektronen pro Schale: ", None, ", Periode: ", None, ", Hauptgruppe: ", None,
+                    ", Alkalimetall: ", None, ". Kohlenstoff (C, 6) – Elektronen pro Schale: ", None, ", Periode: ",
+                    None, ", Hauptgruppe: ", None, ", Alkalimetall: ", None,
+                    ". Magnesium (Mg, 12) – Elektronen pro Schale: ", None, ", Periode: ", None,
+                    ", Hauptgruppe: ", None, ", Alkalimetall: ", None, ". Kalium (K, 19) – Elektronen pro Schale: ",
+                    None, ", Periode: ", None, ", Hauptgruppe: ", None, ", Alkalimetall: ", None, "."],
+          "loesung": [_schalen(2, 1), ["2"], ["1", "I"], ["ja", "x"],
+                      _schalen(2, 4), ["2"], ["4", "IV"], ["nein"],
+                      _schalen(2, 8, 2), ["3"], ["2", "II"], ["nein"],
+                      _schalen(2, 8, 8, 1), ["4"], ["1", "I"], ["ja", "x"]],
+          "wortbank": ["ja", "nein", "1", "2", "3", "4", "2,1", "2,4", "2,8,2", "2,8,8,1"]},
     "6": {"titel": "Aufgabe 6 · Ähnliche Eigenschaften", "typ": "freitext",
-          "frage": "Erkläre mithilfe des Atombaus, warum Natrium und Kalium ähnliche Eigenschaften haben."},
+          "frage": "Natrium (11) und Kalium (19) reagieren beide heftig mit Wasser. Erkläre mithilfe des Atombaus, "
+                   "warum die beiden Elemente ähnliche Eigenschaften haben."},
 }
 
 
@@ -195,6 +218,36 @@ class AbAdapter:
         text = f(6, 1)
         karte(6, "Aufgabe 6 · Ähnliche Eigenschaften", "freitext", {"text": text}, text)
         return ergebnis
+
+    def aufgabe_befuellt(self, schueler_id, aufgabe_id, person):
+        """Die Tafel-Aufgabe, in der schon steht, was die Person im AB eingetragen hat (oder None, wenn es für diese
+        Aufgabe keine Tafel-Fassung gibt). Die Felder bleiben an der Tafel per Tastatur bearbeitbar."""
+        nr = str(aufgabe_id)
+        objekt = aufgabe_leer(nr, KNOPF)
+        if objekt is None:
+            return None
+        felder = self._felder(schueler_id)
+        f = lambda a, n: self._f(felder, a, n)  # noqa: E731
+        if nr in ("1", "2", "3"):
+            werte = [f(int(nr), n) for n in range(1, 7)]
+        elif nr == "5":
+            werte = []
+            for i in range(4):
+                s, per, hg, alk = (f(5, 4 * i + k) for k in (1, 2, 3, 4))
+                werte += [s, per, hg, "ja" if alk == "true" else ("nein" if (s or per or hg) else "")]   # ungekreuzt = „nein“
+        else:
+            werte = None
+        vorhanden = {}
+        if werte is not None:
+            for i, wert in enumerate(werte):
+                if wert:
+                    vorhanden[f"l{i}"] = wert[:60]
+        elif f(int(nr), 1):
+            vorhanden["text"] = f(int(nr), 1)[:2000]
+        objekt["felder"] = {k: {"wert": w, "von_id": person.id, "von": person.name, "status": None, "alt": None}
+                            for k, w in vorhanden.items()}
+        objekt["quelle"] = schueler_id
+        return objekt
 
     def aufgabe_des_schuelers(self, schueler_id, aufgabe_id):
         return next((a for a in self.aufgaben_des_schuelers(schueler_id) if a["aufgabe_id"] == str(aufgabe_id)), None)

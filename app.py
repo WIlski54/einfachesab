@@ -617,9 +617,10 @@ def on_vorstellen(data):
 
 @socketio.on('vorstellen_tafel')
 def on_vorstellen_tafel(data):
-    """Lehrkraft (Dashboard): EIN Klick bringt die Person mit ihrer Aufgabe an die Tafel.
-    Die Tafel geht für die ganze Klasse live (alle anderen schauen zu), die Antwort liegt als Karte da,
-    und nur diese Person darf – mit den voreingestellten Werkzeugen – an der Tafel schreiben."""
+    """Lehrkraft (Dashboard): bringt eine Person mit ihrer Aufgabe an die Tafel.
+    Die Tafel geht für die ganze Klasse live (alle anderen schauen zu). Die Aufgabe liegt dort mit den Antworten
+    aus dem AB bereit und lässt sich per Tastatur weiterbearbeiten – live für alle sichtbar. Es dürfen nur die
+    zugeschalteten Personen schreiben. `weitere` = die bisher Zugeschalteten bleiben (sonst präsentiert nur diese Person)."""
     if not session.get('is_lehrer') or not isinstance(data, dict):
         return {'ok': False}
     sid, nr = data.get('schueler_id'), str(data.get('aufgabe', ''))
@@ -628,20 +629,31 @@ def on_vorstellen_tafel(data):
     person = tafel_server.host.schueler(sid)
     if person is None:
         return {'ok': False, 'fehler': 'unbekannt'}
+    weitere = bool(data.get('weitere'))
     server, tafel = tafel_server, tafel_server.tafel
     with tafel.lock:
-        try:
-            objekt = server.ab_karte_objekt(sid, nr, person.name)
-        except Abgelehnt:
-            return {'ok': False, 'fehler': 'leer'}          # in der Aufgabe steht noch nichts
+        objekt = server.ab.aufgabe_befuellt(sid, nr, person)      # Tafel-Fassung mit den Antworten aus dem AB
+        if objekt is not None:
+            objekt = dict(objekt, id='auf-' + secrets.token_hex(5), typ='aufgabe', geprueft=False, x=300, y=120)
+        else:                                                       # z. B. Schalenmodell: Antwort als Karte
+            try:
+                objekt = server.ab_karte_objekt(sid, nr, person.name)
+            except Abgelehnt:
+                return {'ok': False, 'fehler': 'leer'}              # in der Aufgabe steht noch nichts
         if tafel.modus != 'live':
             tafel.modus_setzen('live')
         for a in [a for a in tafel.angebote if a['schueler_id'] == sid and a['aufgabe_id'] == nr]:
             tafel.angebot_entfernen(a['id'])
-        for pid in [p for p in tafel.am_brett if p != sid]:
-            tafel.abziehen(pid)                             # es präsentiert immer nur eine Person
+        if not weitere:
+            for pid in [p for p in tafel.am_brett if p != sid]:
+                tafel.abziehen(pid)
         tafel.zuschalten(person)
-        server.karte_legen(person, objekt)
+        vorhanden = any(o.get('typ') == 'aufgabe' and o.get('quelle') == sid and o.get('aufgabe_id') == nr
+                        for o in tafel.seiten[tafel.aktuelle_seite]['objekte'])
+        if not vorhanden or objekt.get('typ') == 'ab_karte':
+            server.karte_legen(person, objekt)
+            if objekt.get('typ') == 'aufgabe':
+                tafel.aufgabe_vermerken(objekt, 'geholt')
         server.alles_senden()
         server.angebote_senden()
     server.aenderung()

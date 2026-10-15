@@ -228,3 +228,4 @@ body.tafel-klasse #tafel-panel { visibility: hidden; pointer-events: none; }
 #detail-aktionen { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 #detail-rahmen { flex: 1; width: 100%; border: 0; background: #e2e8f0; }
 body.detail-offen { overflow: hidden; }
+.detail-wahl { font: inherit; padding: 6px 8px; border-radius: 8px; border: 0; background: #fff; color: #0f172a; }

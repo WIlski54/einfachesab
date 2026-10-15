@@ -64,12 +64,16 @@ Die Tafel (Sicherungsphase) kommt aus Deinem Skill `ab-bauen` (`references/tafel
 an echten iPads im Schul-WLAN noch nicht. Vor dem Einsatz die Praxistest-Checkliste aus `D:\KI Projekte\Tafel für AB Skill\README.md` durchgehen.
 
 - **Ansehen, dann an die Tafel (Normalfall):** Im Dashboard steht ✋ bei der Person und in der Liste „✋ Vorstellen“. Ein Klick auf das ✋ in der Matrix (oder „👁 Ansehen“ in der Liste)
-  öffnet **das AB der Person** über dem Dashboard – Du kannst die Aufgabe lesen, kommentieren, zeichnen. Oben in der Leiste steht „🖍️ Aufgabe N an die Tafel“: Ein Klick darauf (oder „🖍️ An die Tafel“ direkt in der Liste)
-  startet die Tafel für **alle**: Alle iPads wechseln zur Tafel (nichts anderes bedienbar), die bearbeitete Aufgabe liegt als Karte auf der Tafel, und nur die vorstellende Person darf mit den
-  freigegebenen Werkzeugen (Stift, Marker, Radierer, Text, Formel, Formen, Laser, „Melden“) schreiben. „← Zurück“ schließt das AB wieder.
+  öffnet **das AB der Person** über dem Dashboard – Du kannst die Aufgabe lesen, kommentieren, zeichnen. Oben in der Leiste wählst Du die Aufgabe (✋ = hat sich gemeldet) und klickst „🖍️ An die Tafel“
+  (jede Person und jede Aufgabe geht, auch ohne Meldung). Das startet die Tafel für **alle**: Alle iPads wechseln zur Tafel (nichts anderes bedienbar). „← Zurück“ schließt das AB wieder.
+- **Die Aufgabe an der Tafel ist bearbeitbar:** Sie liegt dort mit den **Antworten aus dem AB** (Aufgabe 1, 2, 3, 5 als Lückentext mit denselben Feldern wie im AB, Aufgabe 6 als Textfeld). Die zugeschaltete
+  Person tippt ein Feld an und **ergänzt per Tastatur** – für alle live sichtbar („✏️ Name tippt …“). Wer nur zuschaut, kann nichts ändern. Die Lehrkraft kann prüfen und Lösungen einsetzen (Lösungen bleiben auf dem Server).
+  Nur Aufgabe 4 (Schalenmodell) kommt als Karte mit der Elektronenzahl; dazu kann an der Tafel mit den Werkzeugen gezeichnet werden. Änderungen an der Tafel werden **nicht** ins AB zurückgeschrieben.
+- **Weitere Person dazuholen:** Läuft die Tafel, erscheint in der Leiste „➕ Dazuholen“: Die Person wird **zusätzlich** zugeschaltet (die bisherigen bleiben dran), ihre Aufgabe liegt daneben, und alle Zugeschalteten
+  können in allen Aufgaben schreiben. „🖍️ An die Tafel“ dagegen lässt nur diese eine Person an der Tafel.
 - **Drei Ansichten für Dich (Schalter im Dashboard-Kopf, solange die Tafel läuft):** **🖍️ Tafel** (Vollbild), **◫ Geteilt** (Tafel links, Dashboard rechts – die Matrix bleibt im Blick, ein Klick auf einen Namen
   öffnet dessen AB) und **▦ Klasse** (nur das Dashboard; die Tafel läuft für die Klasse unsichtbar weiter). Auch in der Tafel selbst: „◫“ = geteilt, „▦“ = Klasse. „✕“ schließt die Tafel-Ansicht
-  (die Klasse bleibt an der Tafel, „🖍️ Tafel läuft ●“ im Kopf). Der nächste Klick auf „an die Tafel“ holt die nächste Person ran (die vorige wird abgezogen).
+  (die Klasse bleibt an der Tafel, „🖍️ Tafel läuft ●“ im Kopf). Der nächste Klick auf „An die Tafel“ holt die nächste Person ran (die vorige wird abgezogen).
 - **Manuell:** Dashboard → „🖍️ Tafel“ (`/lehrer/tafel`). Dort ☰ öffnen → „▶ Für Klasse starten“, Personen zuschalten/abziehen, 15 Werkzeuge, Aufgaben leer holen (Knopf „an die Tafel“ je Aufgabe) und live lösen lassen.
 - **Beamer:** `/lehrer/tafel/beamer` (nur Zuschauen). **Rückblick:** `/lehrer/tafel/rueckblick`.
 - **„Möchte ich vorstellen“** im AB-Rand legt ein **Angebot** an die Tafel (erst nach einer Eingabe in der Aufgabe). Im Dashboard steht die Warteschlange;
