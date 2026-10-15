@@ -183,6 +183,26 @@
     document.querySelectorAll('#tafel-modi [data-modus]').forEach(function (b) {
       b.classList.toggle('an', b.getAttribute('data-modus') === tafelModus);
     });
+    if (tafelModus && tafelModus !== 'klasse') { tafelPruefen(0); }
+  }
+  // Sicherheitsnetz: Wird die Tafel im Rahmen nach dem Einblenden nicht gezeichnet, neu laden (höchstens zweimal)
+  var pruefTimer = null;
+  function tafelPruefen(versuch) {
+    clearTimeout(pruefTimer);
+    try { tafelRahmen.contentWindow.dispatchEvent(new Event('resize')); } catch (e) {}
+    pruefTimer = setTimeout(function () {
+      if (!tafelModus || tafelModus === 'klasse' || !tafelRahmen.getAttribute('src')) { return; }
+      var ok = false;
+      try {
+        var w = tafelRahmen.contentWindow, c = w.document.querySelector('canvas');
+        ok = !!(w.tafelApp && w.tafelApp.buehne && w.tafelApp.buehne.stage && c && c.width > 0 && w.innerHeight > 0);
+      } catch (e) { ok = false; }
+      if (!ok && versuch < 2) {
+        try { tafelRahmen.contentWindow.location.replace('/lehrer/tafel'); }
+        catch (e) { tafelRahmen.setAttribute('src', '/lehrer/tafel'); }
+        tafelPruefen(versuch + 1);
+      }
+    }, versuch ? 3500 : 1500);
   }
   function tafelOeffnen() { modusSetzen(tafelModus && tafelModus !== 'klasse' ? tafelModus : 'voll'); }
   document.querySelectorAll('#tafel-modi [data-modus]').forEach(function (b) {

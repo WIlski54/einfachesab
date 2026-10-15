@@ -212,7 +212,8 @@ body.tafel-geteilt { padding-left: 56vw; }
 body.tafel-geteilt .dash-grid { grid-template-columns: 1fr; }
 body.tafel-geteilt .queue { position: static; max-height: none; overflow: visible; }
 body.tafel-geteilt .kopfband .logo { display: none; }
-body.tafel-klasse #tafel-panel { visibility: hidden; pointer-events: none; }
+/* „Klasse“: die Tafel läuft ungesehen weiter – aus dem Bild geschoben statt ausgeblendet, damit der Browser sie weiter zeichnet */
+body.tafel-klasse #tafel-panel { transform: translateX(-120vw); pointer-events: none; }
 .knopf.hell.tafel-live { background: #16a34a; }
 .modi { display: inline-flex; }
 .modi[hidden] { display: none; }
