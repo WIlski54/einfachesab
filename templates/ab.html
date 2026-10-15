@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ ab.titel }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ab.css', v=v) }}">
+</head>
+<body class="schueler-ansicht">
+
+<div class="leiste">
+  <div class="links"><span>{{ pseudonym }}</span></div>
+  <div class="rechts">
+    <span id="speicher-status" class="speicher">…</span>
+    <a href="{{ url_for('logout') }}">Abmelden</a>
+  </div>
+</div>
+
+{% include 'ab_blatt.html' %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  window.AB_MODUS = 'schueler';
+  window.AB_WERTE = {{ werte|tojson }};
+  window.AB_VORSTELLEN = {{ vorstellen|tojson }};
+  window.AB_HILFE = {{ hilfe|tojson }};
+  window.AB_ANNOTATIONEN = {{ annotationen|tojson }};
+  window.AB_KI = {{ ki|tojson }};                       // {verlauf, verfuegbar} – nie der Key
+</script>
+<script src="{{ url_for('static', filename='js/ebene.js', v=v) }}"></script>
+<script src="{{ url_for('static', filename='js/ab.js', v=v) }}"></script>
+<script>
+  AB.start(io());
+</script>
+
+{# Digitale Tafel: übernimmt den Bildschirm, solange die Lehrkraft sie live schaltet #}
+<div id="tafel-overlay" hidden><div id="tafel-flaeche"></div></div>
+{% set tafel_ohne_socketio = true %}{% include "_tafel.html" %}
+<script>window.AB_ICH = { id: {{ schueler_id|tojson }}, name: {{ pseudonym|tojson }} };</script>
+<script src="{{ url_for('static', filename='js/tafel_schueler.js', v=v) }}"></script>
+</body>
+</html>

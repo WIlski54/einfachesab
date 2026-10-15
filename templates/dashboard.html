@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lehrer-Dashboard – {{ ab.titel }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/seiten.css', v=v) }}">
+<script>
+  // Im Tafel-Rahmen geladen (nach „← Dashboard“ oder „Beenden“ in der Tafel): Rahmen schließen lassen
+  if (window.top !== window.self) { window.top.postMessage('tafel-zu', location.origin); document.documentElement.style.display = 'none'; }
+</script>
+</head>
+<body class="dash">
+<div class="kopfband">
+  <div style="display:flex;align-items:center;gap:14px">
+    <img class="logo" src="{{ url_for('static', filename='img/logo-gsm.jpg') }}" alt="Gesamtschule Meiderich">
+    <div>
+      <h1>Lehrer-Dashboard</h1>
+      <div class="unter">{{ ab.titel }} · {{ ab.fach }} · {{ ab.klasse }}</div>
+    </div>
+  </div>
+  <div class="kennzahlen">
+    <span class="kz" title="Online / angemeldet"><b id="k-online">0</b> / <span id="k-gesamt">0</span> online</span>
+    <span class="kz rot" id="kz-hilfe-box"><b id="k-hilfe">0</b> Hilfe</span>
+    <span class="kz gelb"><b id="k-vorstellen">0</b> Vorstellen</span>
+  </div>
+  <div class="aktionen">
+    <button class="knopf hell" type="button" id="tafel-knopf" title="Digitale Tafel öffnen (Lehrkraft)">🖍️ Tafel</button>
+    <a class="knopf hell" href="{{ url_for('tafel_rueckblick') }}" target="tafel-rueckblick" title="Rückblick auf die Tafel dieser Stunde">📋 Rückblick</a>
+    <a class="knopf hell" href="{{ url_for('tafel_beamer') }}" target="tafel-beamer" title="Zuschauer-Ansicht für den Beamer">🖥️ Beamer</a>
+    <button class="knopf hell" type="button" id="ki-knopf" aria-expanded="false" aria-controls="ki-panel">🤖 KI</button>
+    <button class="knopf hell" type="button" id="alle-loeschen">Sitzung beenden &amp; Daten löschen</button>
+    <a class="knopf hell" href="{{ url_for('lehrer_logout') }}">Abmelden</a>
+  </div>
+</div>
+
+<div id="tafel-panel" hidden><iframe id="tafel-rahmen" title="Digitale Tafel"></iframe></div>
+
+<section class="ki-panel" id="ki-panel" hidden>
+  <div class="ki-zeile">
+    <strong>🤖 KI-Hilfe</strong>
+    <span class="ki-pille" id="ki-pille"></span>
+    <button type="button" class="knopf klein" id="ki-onoff"></button>
+  </div>
+  <p class="ki-info">Die KI antwortet nur bei Aufgaben, bei denen Du bei einer Hilfe-Anfrage „🤖 KI“ gewählt hast – und gibt Tipps statt Lösungen.
+     An den Anbieter gehen nur der Aufgabentext, die bisherigen Eingaben zu dieser einen Aufgabe und die Fragen – <b>keine Namen</b>. Du kannst im AB jeder Person mitlesen.</p>
+  <div class="ki-zeile ki-form">
+    <label>Anbieter
+      <select id="ki-anbieter"></select>
+    </label>
+    <label>Modell (leer = Standard)
+      <input id="ki-modell" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </label>
+    <label class="breit">API-Key (bleibt nur im Arbeitsspeicher, nach einem Neustart weg)
+      <input id="ki-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Key einfügen">
+    </label>
+    <button type="button" class="knopf klein voll-farbe" id="ki-speichern">Testen &amp; speichern</button>
+    <button type="button" class="knopf klein" id="ki-key-weg">Key entfernen</button>
+  </div>
+  <div class="ki-meldung" id="ki-meldung" role="status"></div>
+</section>
+
+<div class="dash-grid">
+  <!-- Links: Warteschlange – hier wird gehandelt -->
+  <aside class="queue">
+    <section class="karte q-block">
+      <h3>🙋 Hilfe <span class="zaehler" id="z-hilfe"></span></h3>
+      <div id="hilfe-liste"></div>
+    </section>
+    <section class="karte q-block">
+      <div class="q-kopf">
+        <h3>✋ Vorstellen <span class="zaehler" id="z-vorstellen"></span></h3>
+        <button class="mini" type="button" id="zur-tafel">🖍️ Zur Tafel</button>
+      </div>
+      <div id="vorstellen-liste"></div>
+    </section>
+  </aside>
+
+  <!-- Rechts: Überblick Schüler × Aufgaben -->
+  <main class="karte matrix-karte">
+    <table class="matrix" id="matrix">
+      <thead id="matrix-kopf"></thead>
+      <tbody id="zeilen"></tbody>
+    </table>
+    <div class="leer" id="leer">Noch niemand angemeldet.</div>
+    <div class="legende">
+      <span><i class="m hilfe">🙋</i> Hilfe</span>
+      <span><i class="m kom">💬</i> kommentiert</span>
+      <span><i class="m ki">🤖</i> KI frei</span>
+      <span><i class="m weg">🚶</i> Du kommst</span>
+      <span><i class="m vor">✋</i> möchte vorstellen</span>
+      <span><i class="m ok">●</i> bearbeitet</span>
+      <span><i class="m">–</i> leer</span>
+      <span>😶 = online, aber ruhig</span>
+      {% if auto_stunden %}<span>🗑 Daten werden {{ auto_stunden|int if auto_stunden == auto_stunden|int else auto_stunden }} h nach der letzten Aktivität automatisch gelöscht</span>{% endif %}
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  var ANZAHL_AUFGABEN = {{ anzahl_aufgaben|tojson }};
+  var RUHIG_MIN = 5;                         // ab so vielen Minuten ohne Eingabe: 😶
+  var schueler = {};
+  {{ infos|tojson }}.forEach(function (s) { schueler[s.id] = s; });
+
+  var HILFE_LABEL = { offen: 'wartet', kommentiert: '💬 kommentiert', ki: '🤖 KI frei', unterwegs: '🚶 Du kommst' };
+  var SCHNELL = ['Sehr gut ✓', 'Bitte genauer', 'Begründe das', 'Schau nochmal hin'];
+  var KI = {{ ki|tojson }};                  // Status der KI (ohne Key)
+  var ui = {};                               // 'sid|nr' -> {offen, text}   (bleibt beim Neuzeichnen erhalten)
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    if (text !== undefined) { e.textContent = text; }
+    return e;
+  }
+  function minutenSeit(iso) {
+    var t = Date.parse(iso || '');
+    return isNaN(t) ? null : Math.max(0, Math.floor((Date.now() - t) / 60000));
+  }
+  function dauerText(min) {
+    if (min === null) { return ''; }
+    if (min < 1) { return 'gerade eben'; }
+    return min < 60 ? 'seit ' + min + ' min' : 'seit ' + Math.floor(min / 60) + ' h ' + (min % 60) + ' min';
+  }
+  function liste() {
+    return Object.keys(schueler).map(function (k) { return schueler[k]; });
+  }
+  function link(s, nr) {
+    return '/lehrer/schueler/' + encodeURIComponent(s.id) + (nr ? '#aufgabe-' + nr : '');
+  }
+
+  // ---------- Aktionen ----------
+  function hilfeAktion(sid, nr, aktion) {
+    socket.emit('hilfe_entscheidung', { schueler_id: sid, aufgabe: nr, aktion: aktion }, function (res) {
+      if (res && res.fehler === 'ki_aus') {
+        alert('Die KI ist nicht eingerichtet oder ausgeschaltet. Oben unter „🤖 KI“ kannst Du den API-Key eintragen und sie einschalten.');
+        kiPanel(true);
+      } else if (!res || !res.ok) { alert('Das war gerade nicht möglich (vielleicht hat die Schülerin / der Schüler die Anfrage schon zurückgenommen).'); }
+    });
+  }
+  function entscheide(sid, nr, aktion) {
+    socket.emit('vorstellen_entscheidung', { schueler_id: sid, aufgabe: nr, aktion: aktion }, function (res) {
+      if (!res || !res.ok) { alert('Das war gerade nicht möglich.'); }
+    });
+  }
+  // ---------- Digitale Tafel im Dashboard ----------
+  var tafelLive = false;
+  var tafelPanel = document.getElementById('tafel-panel');
+  var tafelRahmen = document.getElementById('tafel-rahmen');
+  function tafelOeffnen() {
+    if (!tafelRahmen.getAttribute('src')) { tafelRahmen.setAttribute('src', '/lehrer/tafel'); }
+    tafelPanel.hidden = false;
+    document.body.classList.add('tafel-offen');
+  }
+  function tafelSchliessen() {
+    tafelPanel.hidden = true;
+    tafelRahmen.removeAttribute('src');
+    document.body.classList.remove('tafel-offen');
+  }
+  window.addEventListener('message', function (e) {
+    if (e.origin === location.origin && e.data === 'tafel-zu') { tafelSchliessen(); }
+  });
+  function anDieTafel(sid, nr) {
+    socket.emit('vorstellen_tafel', { schueler_id: sid, aufgabe: nr }, function (res) {
+      if (res && res.ok) {
+        if (tafelRahmen.getAttribute('src')) { tafelRahmen.src = '/lehrer/tafel'; }    // frisch laden, falls schon offen
+        tafelOeffnen();
+      } else if (res && res.fehler === 'leer') {
+        alert('In dieser Aufgabe steht noch nichts – da gibt es nichts vorzustellen.');
+      } else { alert('Das war gerade nicht möglich.'); }
+    });
+  }
+  document.getElementById('tafel-knopf').addEventListener('click', tafelOeffnen);
+  document.getElementById('zur-tafel').addEventListener('click', tafelOeffnen);
+  // Tafel-Status (läuft sie gerade für die Klasse?) – eigener Kanal der Tafel
+  var tafelKanal = io('/tafel', { transports: ['polling', 'websocket'] });
+  function tafelStatus(d) {
+    tafelLive = d && d.modus === 'live';
+    var k = document.getElementById('tafel-knopf');
+    k.textContent = tafelLive ? '🖍️ Tafel läuft ●' : '🖍️ Tafel';
+    k.classList.toggle('tafel-live', tafelLive);
+  }
+  tafelKanal.on('tafel:meta', tafelStatus);
+  tafelKanal.on('tafel:zustand', tafelStatus);
+
+  function kommentarSenden(sid, nr, text, fertig) {
+    text = (text || '').trim();
+    if (!text) { return; }
+    socket.emit('kommentar_neu', { schueler_id: sid, aufgabe: nr, text: text }, function (res) {
+      if (res && res.ok) { if (fertig) { fertig(); } }
+      else if (res && res.fehler === 'zu_viele') { alert('Mehr als 20 Kommentare an einer Aufgabe sind nicht möglich.'); }
+      else { alert('Der Kommentar konnte nicht gesendet werden.'); }
+    });
+  }
+
+  // ---------- Hilfe-Warteschlange ----------
+  function hilfeKarte(s, h) {
+    var key = s.id + '|' + h.nr;
+    var st = ui[key] || (ui[key] = { offen: false, text: '' });
+    var karte = el('div', 'h-karte h-' + h.status);
+    karte.setAttribute('data-key', key);
+
+    var kopf = el('div', 'h-kopf');
+    var name = el('span', 'h-name', s.pseudonym);
+    kopf.appendChild(name);
+    kopf.appendChild(el('span', 'h-aufgabe', 'Aufgabe ' + h.nr));
+    var a = el('a', 'ansehen', '→');
+    a.href = link(s, h.nr);
+    a.title = 'Zur Aufgabe ' + h.nr + ' von ' + s.pseudonym;
+    kopf.appendChild(a);
+    karte.appendChild(kopf);
+
+    var zeile = el('div', 'h-zeit');
+    var dauer = el('span', 'dauer', dauerText(minutenSeit(h.seit)));
+    dauer.setAttribute('data-seit', h.seit || '');
+    zeile.appendChild(dauer);
+    if (h.status !== 'offen') { zeile.appendChild(el('span', 'h-status', HILFE_LABEL[h.status] || h.status)); }
+    karte.appendChild(zeile);
+
+    var knoepfe = el('div', 'h-knoepfe');
+    function knopf(text, cls, fn) {
+      var b = el('button', 'mini ' + cls, text);
+      b.type = 'button';
+      b.addEventListener('click', fn);
+      knoepfe.appendChild(b);
+      return b;
+    }
+    knopf('💬 Kommentar', st.offen ? 'tuerkis gewaehlt' : 'tuerkis', function () { st.offen = !st.offen; render(); if (st.offen) { fokus(key); } });
+    knopf('🤖 KI', h.status === 'ki' ? 'magenta gewaehlt' : 'magenta', function () { hilfeAktion(s.id, h.nr, 'ki'); });
+    knopf('🚶 Komme', h.status === 'unterwegs' ? 'orange gewaehlt' : 'orange', function () { hilfeAktion(s.id, h.nr, 'komme'); });
+    knopf('✓ Erledigt', 'gruen', function () { delete ui[key]; hilfeAktion(s.id, h.nr, 'erledigt'); });
+    karte.appendChild(knoepfe);
+
+    if (st.offen) {
+      var panel = el('div', 'h-kommentar');
+      var chips = el('div', 'h-chips');
+      SCHNELL.forEach(function (t) {
+        var c = el('button', 'chip-knopf', t);
+        c.type = 'button';
+        c.addEventListener('click', function () { kommentarSenden(s.id, h.nr, t); });
+        chips.appendChild(c);
+      });
+      panel.appendChild(chips);
+      var ta = el('textarea');
+      ta.rows = 2; ta.maxLength = 400;
+      ta.placeholder = 'Kommentar für ' + s.pseudonym + ' …';
+      ta.value = st.text;
+      ta.addEventListener('input', function () { st.text = ta.value; });
+      panel.appendChild(ta);
+      var ok = el('button', 'mini tuerkis gewaehlt', 'Senden');
+      ok.type = 'button';
+      ok.addEventListener('click', function () {
+        kommentarSenden(s.id, h.nr, ta.value, function () { st.text = ''; ta.value = ''; });
+      });
+      panel.appendChild(ok);
+      karte.appendChild(panel);
+    }
+    return karte;
+  }
+
+  function fokus(key) {
+    var ta = document.querySelector('[data-key="' + key + '"] textarea');
+    if (ta) { ta.focus(); }
+  }
+
+  function renderHilfe() {
+    var box = document.getElementById('hilfe-liste');
+    var alle = [];
+    liste().forEach(function (s) { s.hilfe.forEach(function (h) { alle.push({ s: s, h: h }); }); });
+    // offene zuerst (am längsten wartend oben), danach die schon bearbeiteten
+    alle.sort(function (a, b) {
+      var oa = a.h.status === 'offen' ? 0 : 1, ob = b.h.status === 'offen' ? 0 : 1;
+      return (oa - ob) || (a.h.seit || '').localeCompare(b.h.seit || '');
+    });
+    var aktiv = document.activeElement, merk = null;
+    if (aktiv && aktiv.tagName === 'TEXTAREA' && box.contains(aktiv)) {
+      merk = { key: aktiv.closest('[data-key]').getAttribute('data-key'), pos: aktiv.selectionStart };
+    }
+    box.innerHTML = '';
+    if (!alle.length) {
+      box.appendChild(el('div', 'klein ruhe', 'Keine Hilfe-Anfragen. 👍'));
+    }
+    alle.forEach(function (x) { box.appendChild(hilfeKarte(x.s, x.h)); });
+    if (merk) {
+      var ta = document.querySelector('[data-key="' + merk.key + '"] textarea');
+      if (ta) { ta.focus(); ta.setSelectionRange(merk.pos, merk.pos); }
+    }
+    var offen = alle.filter(function (x) { return x.h.status === 'offen'; }).length;
+    document.getElementById('z-hilfe').textContent = offen ? offen : '';
+    return offen;
+  }
+
+  // ---------- Vorstellen-Warteschlange ----------
+  // Angebote liegen an der Tafel: dort annehmen (dann kommt die Antwort als Karte auf die Tafel).
+  function renderVorstellen() {
+    var box = document.getElementById('vorstellen-liste');
+    box.innerHTML = '';
+    var zeilen = [];
+    liste().forEach(function (s) {
+      s.vorstellen.forEach(function (v) { zeilen.push({ s: s, v: v }); });
+    });
+    zeilen.sort(function (a, b) { return (a.v.seit || '').localeCompare(b.v.seit || ''); });
+    if (!zeilen.length) { box.appendChild(el('div', 'klein ruhe', 'Keine Anmeldungen.')); }
+    zeilen.forEach(function (z) {
+      var row = el('div', 'vorstellen-zeile');
+      row.appendChild(el('span', '', z.s.pseudonym + ' · Aufgabe ' + z.v.nr));
+      var akt = el('span', 'zeile-aktionen');
+      var go = el('button', 'mini gruen', '🖍️ An die Tafel');
+      go.type = 'button';
+      go.addEventListener('click', function () { anDieTafel(z.s.id, z.v.nr); });
+      akt.appendChild(go);
+      var b = el('button', 'mini rot', 'Ablehnen');
+      b.type = 'button';
+      b.addEventListener('click', function () { entscheide(z.s.id, z.v.nr, 'ablehnen'); });
+      akt.appendChild(b);
+      row.appendChild(akt);
+      box.appendChild(row);
+    });
+    document.getElementById('z-vorstellen').textContent = zeilen.length ? zeilen.length : '';
+    return zeilen.length;
+  }
+
+  // ---------- Matrix Schüler × Aufgaben ----------
+  // Priorität je Zelle: Hilfe > Tafel > Vorstellen > bearbeitet > leer
+  var HILFE_ICON = { offen: '🙋', kommentiert: '💬', ki: '🤖', unterwegs: '🚶' };
+  function zelle(s, nr) {
+    var sym = [], cls = 'm', tip = [];
+    var h = s.hilfe.filter(function (x) { return x.nr === nr; })[0];
+    var v = s.vorstellen.filter(function (x) { return x.nr === nr; })[0];
+    var bearbeitet = s.bearbeitet_nrs.indexOf(nr) >= 0;
+    if (h) {
+      sym.push(HILFE_ICON[h.status] || '🙋');
+      cls += ' h-' + h.status;
+      tip.push('Hilfe: ' + (h.status === 'offen' ? 'angefragt ' + dauerText(minutenSeit(h.seit)) : HILFE_LABEL[h.status]));
+    }
+    if (v) {
+      sym.push(v.status === 'freigegeben' ? '🖍️' : v.status === 'vorgestellt' ? '✓' : '✋');
+      if (!h) { cls += ' v-' + v.status; }
+      tip.push('Vorstellen: ' + v.status);
+    }
+    if (!sym.length) { sym.push(bearbeitet ? '●' : '–'); cls += bearbeitet ? ' ok' : ' nix'; }
+    if (bearbeitet) { tip.push('bearbeitet'); }
+    return { sym: sym.join(''), cls: cls, tip: s.pseudonym + ' · Aufgabe ' + nr + (tip.length ? ': ' + tip.join(', ') : ': leer') };
+  }
+
+  function nummern() {
+    var n = [];
+    for (var i = 1; i <= ANZAHL_AUFGABEN; i++) { n.push(String(i)); }
+    return n;
+  }
+
+  function renderMatrix() {
+    var alle = liste().sort(function (a, b) { return a.pseudonym.localeCompare(b.pseudonym, 'de'); });  // stabil, springt nicht
+    var nrs = nummern();
+
+    var kopf = document.getElementById('matrix-kopf');
+    kopf.innerHTML = '';
+    var tr = el('tr');
+    tr.appendChild(el('th', 'sp-name', 'Name'));
+    nrs.forEach(function (nr) {
+      var fertig = alle.filter(function (s) { return s.bearbeitet_nrs.indexOf(nr) >= 0; }).length;
+      var hilfe = alle.filter(function (s) { return s.hilfe.some(function (h) { return h.nr === nr && h.status === 'offen'; }); }).length;
+      var th = el('th', 'sp-aufgabe' + (hilfe ? ' hat-hilfe' : ''));
+      th.appendChild(el('div', 'a-nr', nr));
+      th.appendChild(el('div', 'a-sum', fertig + '/' + alle.length));
+      if (hilfe) { th.appendChild(el('div', 'a-hilfe', '🙋' + hilfe)); }
+      tr.appendChild(th);
+    });
+    tr.appendChild(el('th', 'sp-zeit', 'Aktiv'));
+    kopf.appendChild(tr);
+
+    var body = document.getElementById('zeilen');
+    body.innerHTML = '';
+    alle.forEach(function (s) {
+      var offen = s.hilfe.some(function (h) { return h.status === 'offen'; });
+      var min = minutenSeit(s.last_active);
+      var ruhig = s.online && min !== null && min >= RUHIG_MIN;
+      var row = el('tr', (offen ? 'hat-hilfe ' : '') + (ruhig ? 'ruhig' : ''));
+
+      var tdName = el('td', 'sp-name');
+      tdName.appendChild(el('span', 'punkt' + (s.online ? ' on' : '')));
+      var a = el('a', 'name', s.pseudonym);
+      a.href = link(s);
+      tdName.appendChild(a);
+      row.appendChild(tdName);
+
+      nrs.forEach(function (nr) {
+        var z = zelle(s, nr);
+        var td = el('td', 'sp-aufgabe');
+        var ln = el('a', z.cls, z.sym);
+        ln.href = link(s, nr);
+        ln.title = z.tip;
+        if (s.vorstellen.some(function (x) { return x.nr === nr; })) {      // ✋ = Klick bringt die Person an die Tafel
+          ln.title = s.pseudonym + ' möchte Aufgabe ' + nr + ' vorstellen – Klick: an die Tafel';
+          ln.addEventListener('click', function (e) { e.preventDefault(); anDieTafel(s.id, nr); });
+        }
+        td.appendChild(ln);
+        row.appendChild(td);
+      });
+
+      var tdZ = el('td', 'sp-zeit klein');
+      tdZ.setAttribute('data-aktiv', s.last_active || '');
+      tdZ.setAttribute('data-online', s.online ? '1' : '');
+      tdZ.textContent = aktivText(s.online, min);
+      row.appendChild(tdZ);
+      body.appendChild(row);
+    });
+    document.getElementById('leer').style.display = alle.length ? 'none' : 'block';
+  }
+
+  function aktivText(online, min) {
+    if (min === null) { return ''; }
+    var t = min < 1 ? 'jetzt' : 'vor ' + min + ' min';
+    return (online && min >= RUHIG_MIN ? '😶 ' : '') + t;
+  }
+
+  // Zeiten laufen weiter, ohne dass alles neu gezeichnet wird (stört keine Eingabe)
+  function tick() {
+    document.querySelectorAll('[data-seit]').forEach(function (e) {
+      e.textContent = dauerText(minutenSeit(e.getAttribute('data-seit')));
+    });
+    document.querySelectorAll('[data-aktiv]').forEach(function (e) {
+      var min = minutenSeit(e.getAttribute('data-aktiv'));
+      e.textContent = aktivText(!!e.getAttribute('data-online'), min);
+      e.parentNode.classList.toggle('ruhig', !!e.getAttribute('data-online') && min !== null && min >= RUHIG_MIN);
+    });
+  }
+
+  function render() {
+    var l = liste();
+    var offen = renderHilfe();
+    var wartend = renderVorstellen();
+    renderMatrix();
+    document.getElementById('k-online').textContent = l.filter(function (s) { return s.online; }).length;
+    document.getElementById('k-gesamt').textContent = l.length;
+    document.getElementById('k-hilfe').textContent = offen;
+    document.getElementById('k-vorstellen').textContent = wartend;
+    document.getElementById('kz-hilfe-box').classList.toggle('an', offen > 0);
+  }
+
+  // Viele Events in kurzer Zeit (alle tippen) -> höchstens alle 150 ms neu zeichnen
+  var geplant = null;
+  function planeRender() {
+    if (geplant) { return; }
+    geplant = setTimeout(function () { geplant = null; render(); }, 150);
+  }
+  function aktualisiere(info) { schueler[info.id] = info; planeRender(); }
+
+  var socket = io();
+  socket.on('connect', function () { socket.emit('lehrer_join'); });
+  socket.on('alle_schueler', function (liste_) {
+    schueler = {};
+    liste_.forEach(function (s) { schueler[s.id] = s; });
+    render();
+  });
+  ['neuer_schueler', 'schueler_online', 'aktivitaet', 'vorstellen_update', 'hilfe_update'].forEach(function (ev) {
+    socket.on(ev, aktualisiere);
+  });
+  socket.on('schueler_offline', function (d) {
+    if (schueler[d.id]) { schueler[d.id].online = false; planeRender(); }
+  });
+  socket.on('schueler_geloescht', function (d) { delete schueler[d.id]; planeRender(); });
+  socket.on('alle_geloescht', function () { schueler = {}; ui = {}; render(); });
+
+  document.getElementById('alle-loeschen').addEventListener('click', function () {
+    if (!confirm('Sitzung beenden? Alle Schüler:innen werden abgemeldet und alle Eingaben gelöscht.')) { return; }
+    fetch('/lehrer/alle-loeschen', { method: 'POST' });
+  });
+
+
+  // ---------- KI-Einstellungen ----------
+  var KI_FEHLER = {
+    test_schluessel: 'Der Anbieter hat den Key abgelehnt. Bitte prüfen.',
+    test_limit: 'Der Key ist gültig, aber das Limit ist gerade erreicht. Später nochmal versuchen.',
+    test_netz: 'Keine Verbindung zum Anbieter.',
+    test_dienst: 'Der Anbieter meldet einen Fehler. Bitte Modellnamen und Key prüfen.',
+    test_leer: 'Der Anbieter hat nicht geantwortet. Bitte Modellnamen prüfen.',
+    kein_key: 'Bitte zuerst einen Key eintragen.',
+    ungueltig: 'Diese Eingabe ist nicht gültig (Key ohne Leerzeichen, Modell nur Buchstaben/Zahlen/.-_:).'
+  };
+  function kiMeldung(text, gut) {
+    var m = document.getElementById('ki-meldung');
+    m.textContent = text || '';
+    m.className = 'ki-meldung' + (text ? (gut ? ' gut' : ' schlecht') : '');
+  }
+  function kiPanel(auf) {
+    var p = document.getElementById('ki-panel');
+    p.hidden = !auf;
+    document.getElementById('ki-knopf').setAttribute('aria-expanded', auf ? 'true' : 'false');
+  }
+  function kiZeigen() {
+    var sel = document.getElementById('ki-anbieter');
+    if (!sel.options.length) {
+      Object.keys(KI.anbieter_liste).forEach(function (k) {
+        var o = document.createElement('option');
+        o.value = k; o.textContent = KI.anbieter_liste[k].name;
+        sel.appendChild(o);
+      });
+    }
+    if (document.activeElement !== sel) { sel.value = KI.anbieter; }
+    var mo = document.getElementById('ki-modell');
+    mo.placeholder = KI.anbieter_liste[sel.value] ? KI.anbieter_liste[sel.value].modell : '';
+    var pille = document.getElementById('ki-pille');
+    pille.textContent = !KI.eingerichtet ? 'nicht eingerichtet' : KI.an ? 'bereit · ' + KI.modell : 'ausgeschaltet';
+    pille.className = 'ki-pille ' + (KI.verfuegbar ? 'an' : 'aus');
+    var knopf = document.getElementById('ki-knopf');
+    knopf.textContent = KI.verfuegbar ? '🤖 KI an' : '🤖 KI aus';
+    knopf.classList.toggle('ki-an', KI.verfuegbar);
+    var oo = document.getElementById('ki-onoff');
+    oo.textContent = KI.an ? 'Ausschalten' : 'Einschalten';
+    oo.disabled = !KI.eingerichtet;
+  }
+  function kiSenden(daten, ok) {
+    socket.emit('ki_einstellung', daten, function (res) {
+      if (res && res.ok) { KI = res.status; kiZeigen(); if (ok) { ok(); } }
+      else { kiMeldung(KI_FEHLER[res && res.fehler] || 'Das war gerade nicht möglich.', false); }
+    });
+  }
+  document.getElementById('ki-knopf').addEventListener('click', function () { kiPanel(document.getElementById('ki-panel').hidden); });
+  document.getElementById('ki-anbieter').addEventListener('change', function () {
+    document.getElementById('ki-modell').value = '';
+    kiZeigen();
+  });
+  document.getElementById('ki-onoff').addEventListener('click', function () { kiSenden({ an: !KI.an }); });
+  document.getElementById('ki-key-weg').addEventListener('click', function () {
+    if (confirm('Den gespeicherten Key entfernen? Die KI ist danach ausgeschaltet, bis ein neuer Key eingetragen wird.')) {
+      kiSenden({ key: '' }, function () { kiMeldung('Key entfernt.', true); });
+    }
+  });
+  document.getElementById('ki-speichern').addEventListener('click', function () {
+    var key = document.getElementById('ki-key').value.trim();
+    var daten = { anbieter: document.getElementById('ki-anbieter').value, an: true };
+    var modell = document.getElementById('ki-modell').value.trim();
+    if (modell) { daten.modell = modell; }
+    if (key) { daten.key = key; }
+    if (!key && !KI.eingerichtet) { kiMeldung(KI_FEHLER.kein_key, false); return; }
+    daten.test = true;
+    kiMeldung('Teste die Verbindung …', true);
+    kiSenden(daten, function () {
+      document.getElementById('ki-key').value = '';
+      kiMeldung('Verbindung funktioniert. Die KI ist an.', true);
+    });
+  });
+  socket.on('ki_status', function (st) { KI = st; kiZeigen(); });
+  kiZeigen();
+
+  render();
+  setInterval(tick, 20000);
+</script>
+</body>
+</html>

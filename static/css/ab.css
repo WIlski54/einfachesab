@@ -1,0 +1,316 @@
+/* Einfaches digitales Arbeitsblatt – Papier-Look (Schüler- und Lehrer-Ansicht) */
+:root {
+  --gsm-blau: #006AB3;
+  --gsm-orange: #F7B800;
+  --gsm-magenta: #AD007C;
+  --tinte: #1d4ed8;          /* Schüler: blauer Kugelschreiber */
+  --lehrer: #0f8a7e;         /* Lehrer: eigene Farbe, klar abgesetzt */
+  --papier: #ffffff;
+  --tisch: #dfe3e8;
+  --linie: #94a3b8;
+  --text: #1e293b;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 70px 12px 40px;
+  background: var(--tisch);
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ---------- Obere Leiste (nicht Teil des ABs) ---------- */
+.leiste {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  background: #1e293b; color: #fff;
+  display: flex; gap: 16px; align-items: center; justify-content: space-between;
+  padding: 6px 14px; font-size: 14px; min-height: 52px;
+}
+.leiste .links, .leiste .rechts { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.leiste a { color: #cbd5e1; text-decoration: none; padding: 10px 4px; }
+.leiste button {
+  min-height: 44px; padding: 0 14px; border: 0; border-radius: 8px;
+  background: #b91c1c; color: #fff; font-size: 14px; cursor: pointer;
+}
+.speicher { padding: 4px 10px; border-radius: 999px; background: #334155; font-size: 13px; }
+.speicher.ok { background: #166534; }
+.speicher.warn { background: #b45309; }
+.pille { padding: 4px 10px; border-radius: 999px; background: #475569; font-size: 13px; }
+.pille.online { background: #166534; }
+
+/* ---------- Das Blatt ---------- */
+.blatt {
+  background: var(--papier);
+  max-width: 900px; margin: 0 auto;
+  padding: 36px 40px 48px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.12), 0 12px 32px rgba(0,0,0,.12);
+}
+.kopf {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;
+  border-bottom: 3px solid var(--gsm-blau); padding-bottom: 10px; margin-bottom: 14px;
+}
+.kopf .schule { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--gsm-blau); font-weight: bold; }
+.kopf h1 { margin: 2px 0 0; font-size: 28px; }
+.kopf .fach { color: #64748b; font-size: 14px; }
+.kopf-logo { height: 52px; width: auto; flex: none; }
+
+.personalien { display: flex; gap: 28px; margin: 18px 0 26px; flex-wrap: wrap; font-size: 14px; color: #64748b; }
+.pers { display: flex; align-items: baseline; gap: 6px; }
+
+/* ---------- Schülereingaben: Look "mit Stift geschrieben" ---------- */
+.schrift, .eingabe, textarea.eingabe {
+  font-family: "Bradley Hand", "Segoe Print", "Chalkboard SE", "Comic Sans MS", cursive;
+  font-size: 19px; color: var(--tinte);
+}
+.pers .schrift { min-width: 120px; border-bottom: 1.5px dotted var(--linie); padding: 0 6px; }
+.eingabe, textarea.eingabe {
+  background: transparent; border: 0;
+  border-bottom: 1.5px dotted var(--linie);
+  padding: 2px 4px; min-height: 36px;
+  outline: none; border-radius: 0;
+}
+.eingabe:focus { border-bottom: 2px solid var(--tinte); background: rgba(29,78,216,.05); }
+.eingabe.kurz { width: 64px; text-align: center; }
+.luecke { width: 120px; text-align: center; }
+@keyframes neu { from { background: rgba(247,184,0,.45); } to { background: transparent; } }
+.neu { animation: neu 1.6s ease-out; }
+
+/* ---------- Aufgaben ---------- */
+.aufgabe {
+  display: grid; grid-template-columns: 1fr 150px; gap: 0 22px;
+  padding: 18px 0 20px; border-top: 1px solid #e2e8f0; position: relative;
+}
+.aufgabe-inhalt { min-width: 0; position: relative; }
+.aufgabe h2 { margin: 0 0 8px; font-size: 17px; display: flex; gap: 10px; align-items: baseline; }
+.nr {
+  background: var(--gsm-orange); color: #1e293b; font-weight: bold;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+}
+.aufgabe p { margin: 0 0 10px; }
+.hinweis { font-size: 13px; color: #64748b; }
+
+/* Rand rechts: Vorstellen + Lehrer-Notizen */
+.rand { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.vorstellen {
+  display: flex; gap: 8px; align-items: center;
+  min-height: 44px; padding: 6px 8px;
+  border: 1.5px dashed var(--linie); border-radius: 10px;
+  font-size: 13px; color: #475569; cursor: pointer; user-select: none;
+}
+.vorstellen input { width: 22px; height: 22px; accent-color: var(--gsm-orange); flex: none; }
+.vorstellen.aktiv { border-style: solid; border-color: var(--gsm-orange); background: #fff8e1; color: #7a5a00; }
+.vorstellen .status { display: block; font-size: 11px; opacity: .85; }
+.vorstellen.dran { border-style: solid; border-color: #16a34a; background: #dcfce7; color: #14532d; font-weight: bold; }
+.vorstellen.fertig { border-style: solid; border-color: #94a3b8; background: #f1f5f9; color: #475569; }
+.vorstellen input:disabled { opacity: .6; }
+.lehrer-ansicht .vorstellen { cursor: default; }
+.vorstellen-aktionen { display: flex; gap: 6px; flex-wrap: wrap; }
+.vorstellen-aktionen .aktion {
+  min-height: 44px; padding: 0 12px; border-radius: 8px; border: 0; cursor: pointer;
+  font-size: 14px; color: #fff; background: #475569;
+}
+.vorstellen-aktionen .aktion-freigeben, .vorstellen-aktionen .aktion-beenden { background: #16a34a; }
+.vorstellen-aktionen .aktion-ablehnen { background: #b91c1c; }
+
+/* "Ich brauche Hilfe": gleiche Bauart wie "Möchte ich vorstellen", aber eigene Farben (rot/rosa = Hilfe) */
+.hilfe {
+  display: flex; gap: 8px; align-items: center;
+  min-height: 44px; padding: 6px 8px;
+  border: 1.5px dashed var(--linie); border-radius: 10px;
+  font-size: 13px; color: #475569; cursor: pointer; user-select: none;
+}
+.hilfe input { width: 22px; height: 22px; accent-color: #dc2626; flex: none; }
+.hilfe .status { display: block; font-size: 11px; opacity: .9; }
+.hilfe.h-offen { border-style: solid; border-color: #dc2626; background: #fee2e2; color: #7f1d1d; }
+.hilfe.h-kommentiert { border-style: solid; border-color: var(--lehrer); background: rgba(15,138,126,.1); color: var(--lehrer); }
+.hilfe.h-ki { border-style: solid; border-color: var(--gsm-magenta); background: #fce7f3; color: #831843; }
+.hilfe.h-unterwegs { border-style: solid; border-color: var(--gsm-orange); background: #fff8e1; color: #7a5a00; font-weight: bold; }
+.lehrer-ansicht .hilfe { cursor: default; }
+.hilfe-aktionen { display: flex; gap: 6px; flex-wrap: wrap; }
+.hilfe-aktionen .aktion {
+  min-height: 44px; padding: 0 10px; border-radius: 8px; border: 1.5px solid #475569;
+  background: #fff; color: #334155; font-size: 13px; cursor: pointer;
+}
+.hilfe-aktionen .aktion:active { filter: brightness(.9); }
+.hilfe-aktionen .aktion.gewaehlt { background: #334155; color: #fff; }
+.hilfe-aktionen .aktion-h-erledigt { background: #16a34a; border-color: #16a34a; color: #fff; }
+.aufgabe { scroll-margin-top: 70px; }
+
+/* KI-Hilfe: eigene Zeile unter der Aufgabe, magenta = KI (nie mit Schüler-Blau oder Lehrer-Türkis verwechselbar) */
+.ki-box {
+  grid-column: 1 / -1; margin-top: 12px; padding: 10px 12px;
+  border: 1.5px solid var(--gsm-magenta); border-radius: 10px; background: #fdf2f8;
+  font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #4a044e;
+}
+.ki-box[hidden] { display: none; }
+.ki-kopf { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 6px; }
+.ki-sub { font-size: 12px; opacity: .8; }
+.ki-verlauf { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.ki-msg { padding: 6px 10px; border-radius: 10px; max-width: 88%; line-height: 1.35; overflow-wrap: anywhere; white-space: pre-wrap; }
+.ki-msg.frage { align-self: flex-end; background: #dbeafe; color: #1e3a8a; }
+.ki-msg.antwort { align-self: flex-start; background: #fff; border: 1px solid #f0abfc; }
+.ki-wer { display: block; font-size: 11px; font-weight: bold; opacity: .75; }
+.ki-status { min-height: 0; font-size: 13px; margin-top: 6px; }
+.ki-status:empty { display: none; }
+.ki-status.fehler { color: #b91c1c; }
+.ki-form { display: flex; gap: 8px; align-items: stretch; margin-top: 8px; }
+.ki-form[hidden] { display: none; }
+.ki-form textarea {
+  flex: 1; min-height: 48px; padding: 6px 8px; border: 1.5px solid var(--gsm-magenta); border-radius: 8px;
+  font-size: 16px; font-family: inherit; resize: vertical; background: #fff;
+}
+.ki-form button {
+  min-width: 80px; min-height: 48px; border: 0; border-radius: 8px; cursor: pointer;
+  background: var(--gsm-magenta); color: #fff; font-size: 16px;
+}
+.ki-form button:disabled { opacity: .5; }
+.aufgabe.ziel { box-shadow: -10px 0 0 -6px var(--lehrer); }
+
+/* ---------- Tabellen wie auf Papier ---------- */
+table.ab { border-collapse: collapse; width: 100%; margin: 6px 0; }
+table.ab th, table.ab td { border: 1.5px solid #334155; padding: 4px 8px; text-align: left; vertical-align: middle; }
+table.ab th { background: #f1f5f9; font-size: 14px; }
+table.ab td .eingabe { width: 100%; border-bottom: 1px dotted var(--linie); }
+table.ab td.mitte { text-align: center; }
+table.ab input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--tinte); }
+
+/* Freitext mit Linienpapier */
+textarea.freitext {
+  width: 100%; min-height: 160px; resize: vertical;
+  line-height: 32px; padding: 0 6px;
+  background-image: repeating-linear-gradient(transparent 0, transparent 31px, #cbd5e1 31px, #cbd5e1 32px);
+  background-attachment: local; border-bottom: 0;
+}
+
+/* Schalenmodell zum Zeichnen */
+.bohr-wrap { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.bohr { width: 280px; max-width: 100%; touch-action: manipulation; background: #fcfcfd; border: 1.5px solid #334155; border-radius: 8px; }
+.bohr .ring { fill: none; stroke: #94a3b8; stroke-width: 1.4; stroke-dasharray: 4 4; }
+.bohr .kern { fill: #fde68a; stroke: #334155; stroke-width: 1.5; }
+.bohr .e { fill: var(--tinte); stroke: #fff; stroke-width: 1.5; }
+.bohr-tools { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.bohr-tools button {
+  min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #334155;
+  background: #fff; font-size: 14px; cursor: pointer;
+}
+.bohr-tools button:active { background: #e2e8f0; }
+
+/* ---------- Lehrer-Ebene (liegt ÜBER den Schülerantworten) ----------
+   Die Container werden von ab.js angelegt. Die Ebene fängt keine Eingaben ab
+   (pointer-events: none), solange nichts darauf gezeichnet wird. */
+.lehrer-ebene { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.lehrer-ebene.aktiv { pointer-events: auto; touch-action: none; cursor: crosshair; z-index: 20; }
+.eb-canvas { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: multiply; pointer-events: none; }
+.eb-bild { position: absolute; height: auto; border: 2px solid var(--lehrer); box-sizing: border-box; background: #fff; opacity: .93; max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.aufgabe.zeichnen { outline: 3px solid var(--lehrer); outline-offset: 6px; border-radius: 4px; }
+.breite-hinweis {
+  position: fixed; top: 58px; left: 50%; transform: translateX(-50%); z-index: 40;
+  background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; border-radius: 8px;
+  padding: 6px 12px; font: 13px Arial, Helvetica, sans-serif;
+}
+.breite-hinweis[hidden] { display: none; }
+.eb-auf {
+  min-height: 44px; border-radius: 8px; border: 1.5px solid var(--lehrer);
+  background: #fff; color: var(--lehrer); font-size: 14px; cursor: pointer; padding: 0 10px;
+}
+.eb-auf.offen { background: var(--lehrer); color: #fff; }
+body.zeichnen-an { padding-bottom: 90px; }
+.eb-leiste {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: #0f172a; color: #fff; box-shadow: 0 -4px 16px rgba(0,0,0,.3);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.eb-leiste[hidden] { display: none; }
+.eb-titel { font-weight: bold; }
+.eb-gruppe { display: inline-flex; gap: 6px; align-items: center; }
+.eb-gruppe[hidden] { display: none; }
+.eb-knopf {
+  min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 8px;
+  border: 2px solid #475569; background: #1e293b; color: #fff; font-size: 18px; cursor: pointer;
+}
+.eb-knopf.an { border-color: #fff; background: #334155; box-shadow: 0 0 0 2px var(--lehrer); }
+.eb-knopf[hidden] { display: none; }
+.eb-farbe { border-radius: 50%; width: 44px; padding: 0; }
+.eb-fertig { background: var(--lehrer); border-color: var(--lehrer); font-size: 15px; }
+.eb-hinweis { font-size: 13px; opacity: .85; }
+.lehrer-notizen { display: flex; flex-direction: column; gap: 8px; }
+/* Jeder Kommentar einer Aufgabe hat seine eigene Farbe (--nk kräftig = Rand und Zeichenfarbe, --np Pastell = Fläche,
+   --nt dunkel = Schrift). Die Zeichnungen der Lehrkraft nutzen dieselbe kräftige Farbe (siehe ebene.js). */
+.lehrer-notiz { --nk: #0f8a7e; --np: #dcf0ed; --nt: #0b5f57; }
+.lehrer-notiz.nf-p { --nk: #d6336c; --np: #fbdfea; --nt: #9d1f4d; }
+.lehrer-notiz.nf-b { --nk: #3b6fd4; --np: #dce7fb; --nt: #264b97; }
+.lehrer-notiz.nf-o { --nk: #e8820c; --np: #fde8cc; --nt: #94500a; }
+.lehrer-notiz.nf-v { --nk: #8b5cf6; --np: #eadffd; --nt: #5a32b3; }
+.lehrer-notiz.nf-l { --nk: #4d9f2f; --np: #e1f3d6; --nt: #32701d; }
+.lehrer-notiz {
+  position: relative;
+  border-left: 5px solid var(--nk); background: var(--np);
+  border-radius: 0 8px 8px 0; padding: 6px 10px 8px;
+  color: var(--nt); line-height: 1.3; overflow-wrap: anywhere;
+}
+.lehrer-notiz-kopf { font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: bold; letter-spacing: .03em; opacity: .85; }
+.lehrer-notiz-text {
+  font-family: "Bradley Hand", "Segoe Print", "Chalkboard SE", cursive;
+  font-size: 16px; white-space: pre-wrap;
+}
+.lehrer-notiz.frisch { animation: frisch 1.2s ease-out 3; }
+@keyframes frisch { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 4px var(--nk); } }
+.lehrer-notiz-weg {
+  position: absolute; top: 0; right: 0; width: 44px; height: 44px;
+  border: 0; background: transparent; color: var(--nt); font-size: 16px; cursor: pointer; opacity: .7;
+}
+/* Lehrer-Ansicht: Kommentar antippen = in dieser Farbe zeichnen */
+.lehrer-notiz.waehlbar { cursor: pointer; }
+.lehrer-notiz.gewaehlt { box-shadow: 0 0 0 3px var(--nk); }
+
+/* Kommentar-Eingabe (nur Lehrer-Ansicht) */
+.kommentar-editor { display: flex; flex-direction: column; gap: 6px; }
+.k-auf, .k-senden, .k-chips button {
+  min-height: 44px; border-radius: 8px; border: 1.5px solid var(--lehrer);
+  background: #fff; color: var(--lehrer); font-size: 14px; cursor: pointer; padding: 0 10px;
+}
+.k-auf.offen, .k-senden { background: var(--lehrer); color: #fff; }
+.k-panel { display: flex; flex-direction: column; gap: 6px; }
+.k-panel[hidden] { display: none; }
+.k-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.k-chips button:active, .k-auf:active { filter: brightness(.9); }
+.k-panel textarea {
+  width: 100%; border: 1.5px solid var(--lehrer); border-radius: 8px; padding: 6px 8px;
+  font-size: 15px; font-family: inherit; resize: vertical; background: #fff;
+}
+.lehrer-ansicht .aufgabe { grid-template-columns: 1fr 230px; }
+
+/* Hinweis bei neuem Kommentar (Schüler-Ansicht) */
+#kommentar-toast {
+  position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 140%); z-index: 60;
+  min-height: 48px; padding: 0 20px; border: 0; border-radius: 999px;
+  background: var(--lehrer); color: #fff; font-size: 16px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,.3); transition: transform .25s;
+}
+#kommentar-toast.sichtbar { transform: translate(-50%, 0); }
+
+/* ---------- Lehrer-Ansicht: nur lesen ---------- */
+.lehrer-ansicht .eingabe, .lehrer-ansicht input[type=checkbox] { cursor: default; }
+.lehrer-ansicht .eingabe:focus { border-bottom: 1.5px dotted var(--linie); background: transparent; }
+
+@media (max-width: 720px) {
+  body { padding-top: 64px; }
+  .blatt { padding: 22px 16px 32px; }
+  .aufgabe, .lehrer-ansicht .aufgabe { grid-template-columns: 1fr; }
+  .rand { flex-direction: row; flex-wrap: wrap; margin-top: 10px; }
+  .kopf-logo { height: 40px; }
+}
+
+/* ---------- Digitale Tafel (Schülerseite) ---------- */
+#tafel-overlay { position: fixed; inset: 0; z-index: 5000; background: #1a1a1a; }
+#tafel-overlay[hidden] { display: none; }
+#tafel-flaeche { position: absolute; inset: 0; }
+body.tafel-aktiv { overflow: hidden; }
+.tafelbild-link {
+  position: fixed; top: 8px; right: 8px; z-index: 900; background: var(--gsm-blau, #006AB3); color: #fff;
+  padding: 8px 14px; border-radius: 999px; font: 600 14px system-ui, sans-serif; text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+}

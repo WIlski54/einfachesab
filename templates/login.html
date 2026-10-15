@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anmelden – {{ ab.titel }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/seiten.css', v=v) }}">
+</head>
+<body>
+<div class="kopfband">
+  <div>
+    <h1>{{ ab.titel }}</h1>
+    <div class="unter">{{ ab.fach }} · {{ ab.klasse }}</div>
+  </div>
+  <img class="logo" src="{{ url_for('static', filename='img/logo-gsm.jpg') }}" alt="Gesamtschule Meiderich">
+</div>
+
+<div class="karte login-karte">
+  <h2>Anmelden</h2>
+  <form method="post" autocomplete="off">
+    <label for="pseudonym">Dein Pseudonym</label>
+    <input id="pseudonym" name="pseudonym" type="text" maxlength="30" required autofocus
+           autocapitalize="off" autocorrect="off" spellcheck="false">
+    {% if error %}<div class="fehler">{{ error }}</div>{% endif %}
+    <button class="knopf voll" type="submit">Los geht's</button>
+  </form>
+  <div class="hinweise">
+    <strong>Datenschutz:</strong> Nutze ein Pseudonym und keinen echten Namen.
+    Deine Eingaben werden nur während des Unterrichts gespeichert, damit Deine Lehrkraft Dir helfen kann.
+    Sie werden gelöscht, sobald die Lehrkraft die Sitzung beendet.
+  </div>
+</div>
+
+<div class="lehrerlink"><a href="{{ url_for('lehrer_login') }}">🏫 Lehrerbereich</a></div>
+</body>
+</html>

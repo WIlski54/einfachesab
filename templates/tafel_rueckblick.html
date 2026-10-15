@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><link rel="icon" href="{{ url_for('static', filename='img/logo-gsm-transparent.png') }}"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tafel-Rückblick · {{ titel }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='tafel/seiten.css', v=v) }}">
+{% set tafel_socketio = "vendor/socket.io-4.7.5.min.js" %}
+{% include "_tafel.html" %}
+<script>
+  // Anbindung an dieses AB: Die Lehrkraft ist über die Session angemeldet (Cookie), kein Token nötig
+  GT.authKopf = () => ({});
+  GT.socketAuth = () => ({});
+  GT.pfade = { dashboard: "/lehrer", tafel: "/lehrer/tafel", rueckblick: "/lehrer/tafel/rueckblick" };
+  GT.abmelden = () => { location.href = "/lehrer/login"; };
+  GT.anmeldungPruefen = async () => ({ id: "lehrer", rolle: "lehrer", name: "Lehrkraft" });
+</script>
+<script src="{{ url_for('static', filename='vendor/jspdf.umd.min.js') }}"></script>
+<style>
+  .raster { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 14px; padding: 14px; align-items: start; }
+  @media (max-width: 800px) { .raster { grid-template-columns: 1fr; } }
+  .filter { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .filter select { font-size: 15px; padding: 6px; border-radius: 8px; border: 1px solid #b8c4d6; }
+  .moment { background: #fff; border: 2px solid #e3e7ee; border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; cursor: pointer; }
+  .moment.aktiv { border-color: #2b4a6f; background: #f3f7fc; }
+  .moment b { font-size: 15px; }
+  .moment small { display: block; color: #667; font-size: 13px; margin-top: 2px; }
+  .moment .notiz { color: #2e6d3a; font-size: 13px; margin-top: 3px; font-style: italic; }
+  .tafelrahmen { width: 100%; aspect-ratio: 3 / 2; border-radius: 8px; overflow: hidden; background: #1a1a1a; position: relative; }
+  .leiste { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  textarea { width: 100%; min-height: 70px; font-size: 15px; padding: 8px; border-radius: 10px; border: 1px solid #b8c4d6; font-family: inherit; }
+  .leer { color: #889; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="kopf"><h1>📖 Tafel-Rückblick</h1><div class="rechts"><a class="knopf" id="zurueck" href="/lehrer">← Dashboard</a></div></div>
+<div class="raster">
+  <section>
+    <div class="filter">
+      <select id="filter-schueler"><option value="">Alle Schüler</option></select>
+      <label class="schalter"><input type="checkbox" id="filter-stern">nur ⭐</label>
+    </div>
+    <div id="liste"><div class="leer">Noch keine Momentaufnahmen. Sie entstehen automatisch, wenn du einen Schüler von der Tafel nimmst, die Tafel leerst oder beendest – und mit ⭐ Merken.</div></div>
+  </section>
+  <section class="karte" id="detail" hidden>
+    <h2 id="titel"></h2>
+    <div class="leiste">
+      <select id="hervorheben"></select>
+      <span id="seitenwahl"></span>
+      <span style="margin-left:auto"></span>
+      <button class="knopf hell klein" id="pdf">💾 PDF</button>
+      <button class="knopf gruen klein" id="fortsetzen">▶ Als Fortsetzung öffnen</button>
+    </div>
+    <div class="tafelrahmen"><div id="buehne" style="position:absolute;inset:0"></div></div>
+    <div style="margin-top:10px"><div class="hinweis">Notiz zur Leistung (nur für dich sichtbar)</div>
+      <textarea id="notiz" placeholder="Aufbau korrekt, Beschriftung der Gasableitung fehlt …"></textarea>
+      <div class="hinweis" id="notiz-status"></div></div>
+  </section>
+</div>
+<script>
+(async () => {
+  await GT.anmeldungPruefen("lehrer");
+  const $ = (id) => document.getElementById(id);
+  $("zurueck").href = GT.pfade.dashboard;
+  const socket = GT.verbindung();
+  const emit = (e, d) => new Promise((ok) => socket.timeout(8000).emit(e, d || {}, (f, a) => ok(f ? { ok: false, grund: "Keine Antwort." } : a)));
+  let momente = [], aktuell = null, seiteNr = 0, buehne = null, anzahl = -1;
+
+  const uhr = (t) => t ? new Date(t * 1000).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
+  const tag = (t) => new Date(t * 1000).toLocaleDateString("de-DE");
+  const namen = (m) => m.schueler.map((s) => s.name).join(", ");
+  function titel(m) {
+    const vorn = m.geladen ? `letzte Stunde (${tag(m.zeit)}) · ` : "";
+    if (m.art === "auftritt") return { t: "✏️ " + namen(m), u: vorn + uhr(m.start) + "–" + uhr(m.zeit) };
+    if (m.art === "merken") return { t: "⭐ Gemerkt", u: vorn + uhr(m.zeit) + (m.schueler.length ? " · " + namen(m) : "") };
+    if (m.art === "leeren") return { t: "🧹 Vor dem Leeren", u: vorn + uhr(m.zeit) };
+    return { t: "🏁 Tafelbild am Ende", u: vorn + uhr(m.zeit) };
+  }
+
+  async function laden() {
+    const d = await GT.api("GET", "/tafel/api/lehrer/momente");
+    momente = d.momente.slice().reverse();
+    const alle = new Map();
+    momente.forEach((m) => m.schueler.forEach((s) => alle.set(s.id, s.name)));
+    const wahl = $("filter-schueler").value;
+    $("filter-schueler").innerHTML = '<option value="">Alle Schüler</option>' + [...alle].map(([id, n]) =>
+      `<option value="${GT.esc(id)}" ${id === wahl ? "selected" : ""}>${GT.esc(n)}</option>`).join("");
+    liste();
+  }
+
+  function liste() {
+    const sid = $("filter-schueler").value, stern = $("filter-stern").checked;
+    const sichtbar = momente.filter((m) => (!sid || m.schueler.some((s) => s.id === sid)) && (!stern || m.gemerkt));
+    if (!sichtbar.length) { $("liste").innerHTML = '<div class="leer">Keine passenden Momentaufnahmen.</div>'; return; }
+    $("liste").innerHTML = sichtbar.map((m) => {
+      const { t, u } = titel(m);
+      return `<div class="moment ${aktuell && aktuell.id === m.id ? "aktiv" : ""}" data-id="${m.id}">
+        <b>${GT.esc(t)}</b>${m.gemerkt && m.art !== "merken" ? " ⭐" : ""}<small>${GT.esc(u)} · ${m.objekte} Objekte${m.seitenzahl > 1 ? " · " + m.seitenzahl + " Seiten" : ""}</small>
+        ${m.notiz ? `<div class="notiz">${GT.esc(m.notiz)}</div>` : ""}</div>`;
+    }).join("");
+  }
+
+  const beteiligt = (o, sid) => o.autor === sid || Object.values(o.felder || {}).some((f) => f && f.von_id === sid);
+
+  function zeichnen() {
+    const s = aktuell.seiten[seiteNr].seite;
+    const sid = $("hervorheben").value;
+    GT.hervorhebenPerson = sid || null;
+    buehne._datum = aktuell.datum || null;
+    buehne._ueberschrift = aktuell.ueberschrift || "";
+    buehne.seiteZeigen(s);
+    GT.hervorhebenPerson = null;
+    if (sid) buehne.knoten.forEach((g, id) => { const o = s.objekte.find((x) => x.id === id); if (o && !beteiligt(o, sid)) g.opacity(0.16); });
+    buehne.obj.batchDraw();
+  }
+
+  async function zeigen(id) {
+    const d = await GT.api("GET", "/tafel/api/lehrer/momente/" + id);
+    aktuell = d.moment;
+    seiteNr = 0;
+    $("detail").hidden = false;
+    const { t, u } = titel(aktuell);
+    $("titel").textContent = t + " · " + u;
+    const beteiligte = new Map();
+    aktuell.seiten.forEach((s) => s.seite.objekte.forEach((o) => {
+      if (o.autor && o.autor !== "lehrer") beteiligte.set(o.autor, o.autor_name);
+      Object.values(o.felder || {}).forEach((f) => { if (f && f.von_id && f.von_id !== "lehrer") beteiligte.set(f.von_id, f.von); });
+    }));
+    const vorwahl = aktuell.art === "auftritt" && aktuell.schueler[0] ? aktuell.schueler[0].id : "";
+    $("hervorheben").innerHTML = '<option value="">Alles zeigen</option>' + [...beteiligte].map(([sid, n]) =>
+      `<option value="${GT.esc(sid)}" ${sid === vorwahl ? "selected" : ""}>Nur ${GT.esc(n)} hervorheben</option>`).join("");
+    $("seitenwahl").innerHTML = aktuell.seiten.length > 1 ? aktuell.seiten.map((s, i) =>
+      `<button class="knopf klein ${i === 0 ? "gruen" : "hell"}" data-s="${i}">Seite ${s.index + 1}</button>`).join(" ") : "";
+    $("notiz").value = aktuell.notiz || "";
+    $("notiz-status").textContent = "";
+    if (!buehne) buehne = new GT.Buehne($("buehne"));
+    setTimeout(() => { buehne.anpassen(); zeichnen(); }, 0);
+    liste();
+  }
+
+  $("liste").onclick = (e) => { const m = e.target.closest(".moment"); if (m) zeigen(m.dataset.id); };
+  $("filter-schueler").onchange = liste;
+  $("filter-stern").onchange = liste;
+  $("hervorheben").onchange = zeichnen;
+  $("seitenwahl").onclick = (e) => {
+    if (e.target.dataset.s === undefined) return;
+    seiteNr = Number(e.target.dataset.s);
+    $("seitenwahl").querySelectorAll("button").forEach((b, i) => b.className = "knopf klein " + (i === seiteNr ? "gruen" : "hell"));
+    zeichnen();
+  };
+  let notizTimer;
+  $("notiz").oninput = () => {
+    clearTimeout(notizTimer);
+    $("notiz-status").textContent = "…";
+    notizTimer = setTimeout(async () => {
+      const r = await emit("lehrer:notiz", { moment_id: aktuell.id, text: $("notiz").value });
+      $("notiz-status").textContent = r.ok ? "✓ gespeichert" : "⚠ " + r.grund;
+      const m = momente.find((x) => x.id === aktuell.id);
+      if (m) m.notiz = $("notiz").value;
+      liste();
+    }, 600);
+  };
+  $("pdf").onclick = async () => {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1500, 1000], hotfixes: ["px_scaling"] });
+    for (let i = 0; i < aktuell.seiten.length; i++) {
+      if (i > 0) pdf.addPage([1500, 1000], "landscape");
+      pdf.addImage(await GT.Buehne.exportieren(aktuell.seiten[i].seite, 1.2, "image/jpeg", 0.82, aktuell.datum, aktuell.ueberschrift), "JPEG", 0, 0, 1500, 1000);
+      if (aktuell.notiz) { pdf.setFontSize(22); pdf.setTextColor(255, 255, 255); pdf.text("Notiz: " + aktuell.notiz, 30, 980); }
+    }
+    pdf.save("Rueckblick_" + titel(aktuell).t.replace(/[^\wäöüÄÖÜß]+/g, "_") + ".pdf");
+  };
+  $("fortsetzen").onclick = async () => {
+    if (!confirm("Die aktuelle Tafel wird durch diese Aufnahme ersetzt. Fortfahren?")) return;
+    const r = await emit("lehrer:fortsetzen", { moment_id: aktuell.id });
+    if (!r.ok) { GT.toast(r.grund, "fehler"); return; }
+    GT.toast("Die Tafel ist wieder aufgelegt.");
+    setTimeout(() => (location.href = GT.link("/lehrer/tafel")), 700);
+  };
+  socket.on("tafel:meta", (d) => { if (d.momente_anzahl !== anzahl) { anzahl = d.momente_anzahl; laden(); } });
+  socket.on("tafel:zustand", (d) => { if (d.momente_anzahl !== anzahl) { anzahl = d.momente_anzahl; laden(); } });
+  laden();
+})();
+</script>
+</body>
+</html>

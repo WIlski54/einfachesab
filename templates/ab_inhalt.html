@@ -1,0 +1,124 @@
+{#
+  INHALT DES ARBEITSBLATTS
+  ------------------------
+  Nur diese Datei (und AB_META in app.py) ändern, um ein neues AB zu erstellen.
+
+  Regeln:
+  - Jede Aufgabe ist ein <section class="aufgabe" data-aufgabe="N"> (N = 1, 2, 3 ...).
+  - Eingabefelder bekommen ihre IDs automatisch (Reihenfolge innerhalb der Aufgabe).
+    Daher innerhalb einer Aufgabe die Reihenfolge der Felder nicht mehr ändern,
+    sobald Schüler:innen damit arbeiten.
+  - Text:        <input class="eingabe" type="text">   (kurz: class="eingabe kurz")
+  - Ankreuzen:   <input type="checkbox">
+  - Freitext:    <textarea class="eingabe freitext"></textarea>
+  - Schalenmodell: <div class="bohr-wrap" data-widget="bohr"> ... (siehe Aufgabe 4)
+  - Rand rechts mit "Möchte ich vorstellen" und "Ich brauche Hilfe": {{ rand() }}
+#}
+{% macro rand() %}
+<div class="rand">
+  <label class="vorstellen"><input type="checkbox" data-vorstellen><span>Möchte ich vorstellen<span class="status"></span></span></label>
+  <label class="hilfe"><input type="checkbox" data-hilfe><span>🙋 Ich brauche Hilfe<span class="status"></span></span></label>
+</div>
+{% endmacro %}
+
+<!-- ===== Aufgabe 1 ===== -->
+<section class="aufgabe" data-aufgabe="1">
+  <div class="aufgabe-inhalt">
+    <h2><span class="nr">1</span> Die Bausteine des Atoms</h2>
+    <p><strong>Ergänze</strong> die Tabelle.</p>
+    <table class="ab">
+      <tr><th>Teilchen</th><th>Symbol</th><th>Ladung</th><th>Ort im Atom</th></tr>
+      <tr><td>Proton</td><td class="mitte">p⁺</td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td></tr>
+      <tr><td>Neutron</td><td class="mitte">n</td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td></tr>
+      <tr><td>Elektron</td><td class="mitte">e⁻</td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td></tr>
+    </table>
+  </div>
+  {{ rand() }}
+</section>
+
+<!-- ===== Aufgabe 2 ===== -->
+<section class="aufgabe" data-aufgabe="2">
+  <div class="aufgabe-inhalt">
+    <h2><span class="nr">2</span> Lückentext</h2>
+    <p><strong>Vervollständige</strong> den Text.</p>
+    <p style="line-height:2.3">
+      Ein Atom besteht aus dem <input class="eingabe luecke" type="text"> und der
+      <input class="eingabe luecke" type="text">. Im Kern befinden sich die
+      <input class="eingabe luecke" type="text"> und die
+      <input class="eingabe luecke" type="text">. Die Ordnungszahl eines Elements gibt die Anzahl der
+      <input class="eingabe luecke" type="text"> an. Ein neutrales Atom hat
+      genauso viele <input class="eingabe luecke" type="text"> wie Protonen.
+    </p>
+  </div>
+  {{ rand() }}
+</section>
+
+<!-- ===== Aufgabe 3 ===== -->
+<section class="aufgabe" data-aufgabe="3">
+  <div class="aufgabe-inhalt">
+    <h2><span class="nr">3</span> Das Natrium-Atom</h2>
+    <p>Natrium hat die Ordnungszahl <strong>11</strong> und die Massenzahl <strong>23</strong>.
+       <strong>Bestimme</strong> die Anzahl der Teilchen und die Verteilung der Elektronen auf die Schalen.</p>
+    <p style="line-height:2.4">
+      Protonen: <input class="eingabe kurz" type="text" inputmode="numeric">
+      &nbsp; Neutronen: <input class="eingabe kurz" type="text" inputmode="numeric">
+      &nbsp; Elektronen: <input class="eingabe kurz" type="text" inputmode="numeric"><br>
+      K-Schale: <input class="eingabe kurz" type="text" inputmode="numeric">
+      &nbsp; L-Schale: <input class="eingabe kurz" type="text" inputmode="numeric">
+      &nbsp; M-Schale: <input class="eingabe kurz" type="text" inputmode="numeric">
+    </p>
+  </div>
+  {{ rand() }}
+</section>
+
+<!-- ===== Aufgabe 4 ===== -->
+<section class="aufgabe" data-aufgabe="4">
+  <div class="aufgabe-inhalt">
+    <h2><span class="nr">4</span> Das Schalenmodell von Chlor</h2>
+    <p><strong>Zeichne</strong> die 17 Elektronen des Chlor-Atoms in das Schalenmodell ein.
+       Tippe auf eine Schale, um ein Elektron zu setzen. Tippe auf ein Elektron, um es wieder zu entfernen.</p>
+    <div class="bohr-wrap" data-widget="bohr">
+      <svg class="bohr" viewBox="0 0 300 300" aria-label="Schalenmodell">
+        <circle class="ring" cx="150" cy="150" r="50"/>
+        <circle class="ring" cx="150" cy="150" r="88"/>
+        <circle class="ring" cx="150" cy="150" r="124"/>
+        <circle class="kern" cx="150" cy="150" r="22"/>
+        <text x="150" y="155" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">17p⁺</text>
+        <g class="elektronen"></g>
+      </svg>
+      <div class="bohr-tools">
+        <div>Gesetzte Elektronen: <strong class="zaehler">0</strong></div>
+        <button type="button" class="bohr-reset">Alle entfernen</button>
+      </div>
+    </div>
+  </div>
+  {{ rand() }}
+</section>
+
+<!-- ===== Aufgabe 5 ===== -->
+<section class="aufgabe" data-aufgabe="5">
+  <div class="aufgabe-inhalt">
+    <h2><span class="nr">5</span> Ausschnitt aus dem Periodensystem</h2>
+    <p><strong>Ergänze</strong> die Tabelle und <strong>kreuze</strong> an, welche Elemente Alkalimetalle sind.</p>
+    <table class="ab">
+      <tr><th>Element</th><th>Ordnungszahl</th><th>Elektronen pro Schale</th><th>Periode</th><th>Hauptgruppe</th><th>Alkalimetall</th></tr>
+      <tr><td>Lithium (Li)</td><td class="mitte">3</td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td class="mitte"><input type="checkbox"></td></tr>
+      <tr><td>Kohlenstoff (C)</td><td class="mitte">6</td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td class="mitte"><input type="checkbox"></td></tr>
+      <tr><td>Magnesium (Mg)</td><td class="mitte">12</td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td class="mitte"><input type="checkbox"></td></tr>
+      <tr><td>Kalium (K)</td><td class="mitte">19</td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td><input class="eingabe" type="text"></td><td class="mitte"><input type="checkbox"></td></tr>
+    </table>
+    <p class="hinweis">Tipp: Die Periode verrät dir, wie viele Schalen das Atom hat.</p>
+  </div>
+  {{ rand() }}
+</section>
+
+<!-- ===== Aufgabe 6 ===== -->
+<section class="aufgabe" data-aufgabe="6">
+  <div class="aufgabe-inhalt">
+    <h2><span class="nr">6</span> Ähnliche Eigenschaften</h2>
+    <p>Natrium (11) und Kalium (19) reagieren beide heftig mit Wasser.
+       <strong>Erkläre</strong> mithilfe des Atombaus, warum die beiden Elemente ähnliche Eigenschaften haben.</p>
+    <textarea class="eingabe freitext" rows="5"></textarea>
+  </div>
+  {{ rand() }}
+</section>

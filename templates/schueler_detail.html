@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ info.pseudonym }} – {{ ab.titel }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ab.css', v=v) }}">
+</head>
+<body class="lehrer-ansicht">
+
+<div class="leiste">
+  <div class="links">
+    <a href="{{ url_for('lehrer_dashboard') }}">← Übersicht</a>
+    <span>{{ info.pseudonym }}</span>
+    <span id="online-pille" class="pille">offline</span>
+  </div>
+  <div class="rechts">
+    <a href="{{ url_for('tafel_lehrer') }}" target="tafel">🖍️ Tafel</a>
+    <span class="speicher">Ansicht live · Blau = Schüler:in · Türkis = Du</span>
+    <button type="button" id="loeschen">Daten löschen</button>
+  </div>
+</div>
+
+<div id="breite-hinweis" class="breite-hinweis" hidden></div>
+
+{% include 'ab_blatt.html' %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  window.AB_MODUS = 'lehrer';
+  window.AB_WERTE = {{ werte|tojson }};
+  window.AB_VORSTELLEN = {{ vorstellen|tojson }};
+  window.AB_HILFE = {{ hilfe|tojson }};
+  window.AB_ANNOTATIONEN = {{ annotationen|tojson }};
+  window.AB_KI = {{ ki|tojson }};                       // {verlauf, verfuegbar} – nie der Key
+  window.AB_LEHRER_EDIT = { schueler_id: {{ info.id|tojson }} };   // schaltet Kommentar- und Zeichen-Eingabe frei
+  window.AB_BREITE = {{ breite|tojson }};                          // Blattbreite des Schülergeräts (px) oder null
+  window.AB_NAME = {{ info.pseudonym|tojson }};
+  var SCHUELER_ID = {{ info.id|tojson }};
+  var ONLINE = {{ info.online|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/ebene.js', v=v) }}"></script>
+<script src="{{ url_for('static', filename='js/ab.js', v=v) }}"></script>
+<script>
+  var socket = io();
+  AB.start(socket);
+
+  var pille = document.getElementById('online-pille');
+  function zeigeOnline(on) {
+    pille.textContent = on ? 'online' : 'offline';
+    pille.className = 'pille' + (on ? ' online' : '');
+  }
+  zeigeOnline(ONLINE);
+
+  // Unter dem Vorstellen-Feld: Angebot ablehnen (Annehmen geschieht an der Tafel)
+  window.AB_AKTION = function (nr, aktion) {
+    socket.emit('vorstellen_entscheidung',
+      { schueler_id: SCHUELER_ID, aufgabe: nr, aktion: aktion },
+      function (res) {
+        if (!res || !res.ok) { alert('Das war gerade nicht möglich.'); }
+      });
+  };
+
+  // Hilfe-Anfrage: ki | komme | erledigt
+  window.AB_HILFE_AKTION = function (nr, aktion) {
+    socket.emit('hilfe_entscheidung', { schueler_id: SCHUELER_ID, aufgabe: nr, aktion: aktion },
+      function (res) {
+        if (res && res.fehler === 'ki_aus') { alert('Die KI ist nicht eingerichtet oder ausgeschaltet. Im Dashboard oben unter „🤖 KI“ kannst Du sie einrichten.'); }
+        else if (!res || !res.ok) { alert('Das war gerade nicht möglich.'); }
+      });
+  };
+
+  var ersterConnect = true;
+  socket.on('connect', function () {
+    if (!ersterConnect) { location.reload(); return; }    // nach Verbindungsabbruch neu synchronisieren
+    ersterConnect = false;
+    socket.emit('lehrer_join');
+    socket.emit('watch_schueler', { schueler_id: SCHUELER_ID });
+  });
+
+  // Feldinhalte kommen nur über watch_<id>, Übersichtsdaten nur über lehrer_room
+  socket.on('antwort_live', function (d) {
+    if (d.schueler_id === SCHUELER_ID) { AB.live(d.feld, d.wert); }
+  });
+  socket.on('vorstellen_update', function (i) {
+    if (i.id === SCHUELER_ID) { AB.setzeVorstellenListe(i.vorstellen); }
+  });
+  socket.on('hilfe_update', function (i) {
+    if (i.id === SCHUELER_ID) { AB.setzeHilfeListe(i.hilfe); }
+  });
+  socket.on('schueler_online', function (i) { if (i.id === SCHUELER_ID) { zeigeOnline(true); } });
+  socket.on('schueler_offline', function (d) { if (d.id === SCHUELER_ID) { zeigeOnline(false); } });
+  socket.on('schueler_geloescht', function (d) { if (d.id === SCHUELER_ID) { location.href = '/lehrer'; } });
+  socket.on('alle_geloescht', function () { location.href = '/lehrer'; });
+
+  document.getElementById('loeschen').addEventListener('click', function () {
+    if (!confirm('Alle Daten dieser Schülerin / dieses Schülers löschen?')) { return; }
+    fetch('/lehrer/schueler/' + encodeURIComponent(SCHUELER_ID) + '/loeschen', { method: 'POST' })
+      .then(function () { location.href = '/lehrer'; });
+  });
+</script>
+</body>
+</html>

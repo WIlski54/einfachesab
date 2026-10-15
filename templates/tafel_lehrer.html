@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><link rel="icon" href="{{ url_for('static', filename='img/logo-gsm-transparent.png') }}"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Tafel · {{ titel }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='tafel/seiten.css', v=v) }}">
+{% set tafel_socketio = "vendor/socket.io-4.7.5.min.js" %}
+{% include "_tafel.html" %}
+<script>
+  // Anbindung an dieses AB: Die Lehrkraft ist über die Session angemeldet (Cookie), kein Token nötig
+  GT.authKopf = () => ({});
+  GT.socketAuth = () => ({});
+  GT.pfade = { dashboard: "/lehrer", tafel: "/lehrer/tafel", rueckblick: "/lehrer/tafel/rueckblick" };
+  GT.abmelden = () => { location.href = "/lehrer/login"; };
+  GT.anmeldungPruefen = async () => ({ id: "lehrer", rolle: "lehrer", name: "Lehrkraft" });
+</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='tafel/lehrer.css', v=v) }}">
+<script src="{{ url_for('static', filename='vendor/jspdf.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='tafel/lehrer-steuerung.js', v=v) }}"></script>
+</head>
+<body>
+<div id="tafel" class="vollbild"></div>
+<div class="lehrer-knoepfe">
+  <button id="zurueck" title="Zurück zum Dashboard (die Tafel läuft weiter)">▦</button>
+  <button id="stift" title="Meine Werkzeugleiste ein-/ausblenden">✏️</button>
+  <button id="menue" title="Tafel-Steuerung">☰</button>
+</div>
+<aside class="lehrer-leiste" id="leiste" hidden></aside>
+<script>
+(async () => {
+  await GT.anmeldungPruefen("lehrer");
+  const app = (window.tafelApp = new GT.TafelApp(document.getElementById("tafel"), { rolle: "lehrer" }));
+  const aside = document.getElementById("leiste");
+  const leiste = new GT.LehrerLeiste(aside, app);
+  const stift = document.getElementById("stift"), menue = document.getElementById("menue");
+  // Zurück zum Dashboard: im Dashboard-Rahmen dort schließen, sonst normal wechseln (die Tafel läuft weiter)
+  document.getElementById("zurueck").onclick = () => {
+    if (window.top !== window.self) window.top.postMessage("tafel-zu", location.origin);
+    else location.href = "/lehrer";
+  };
+  let erstesMal = true;
+
+  stift.onclick = () => { app.leisteZeigen(!app.leisteGewuenscht); stift.classList.toggle("an", app.leisteGewuenscht); };
+  menue.onclick = () => { aside.hidden = !aside.hidden; menue.classList.toggle("an", !aside.hidden); if (!aside.hidden) leiste.zeichnen(); };
+
+  app.onSocket = (s) => {
+    s.on("lehrer:schueler", (liste) => {
+      const vorher = new Set(leiste.schueler.filter((x) => x.gemeldet).map((x) => x.id));
+      leiste.schueler = liste;
+      liste.filter((x) => x.gemeldet && !vorher.has(x.id)).forEach((x) => GT.toast("🙋 " + x.name + " meldet sich"));
+      if (!aside.hidden) leiste.zeichnen();
+    });
+    s.on("lehrer:angebote", (liste) => {
+      if (liste.length > leiste.angebote.length) GT.toast("🙋 " + liste[liste.length - 1].name + " möchte etwas vorstellen");
+      leiste.angebote = liste;
+      if (!aside.hidden) leiste.zeichnen();
+    });
+  };
+  let opTimer;
+  app.onOp = () => { if (aside.hidden) return; clearTimeout(opTimer); opTimer = setTimeout(() => leiste.zeichnen(), 250); };
+  app.onZustand = (z) => {
+    if (erstesMal && z.modus === "aus") app.emit("lehrer:modus", { modus: "vorbereitung" });
+    if (erstesMal) { app.leisteZeigen(true); stift.classList.add("an"); }     // Lehrkraft hat immer die volle Werkzeugleiste
+    erstesMal = false;
+    if (!aside.hidden) leiste.zeichnen();
+  };
+  app.starten();
+})();
+</script>
+</body>
+</html>

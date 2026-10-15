@@ -1,0 +1,122 @@
+/* Tafel-Baustein */
+.gt-tafel { position: relative; width: 100%; height: 100%; background: #1a1a1a; overflow: hidden;
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; -webkit-user-select: none; user-select: none; }
+.gt-flaeche { position: absolute; inset: 0; touch-action: none; }
+.gt-tafel.mit-leiste .gt-flaeche { left: 66px; }
+.gt-tafel.eingefroren .gt-flaeche { filter: saturate(0.85); }
+
+/* Werkzeugleiste */
+.gt-leiste { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column;
+  gap: 4px; padding: 6px 5px; background: rgba(20, 20, 20, 0.78); border-radius: 14px; max-height: calc(100% - 16px); overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); }
+.gt-leiste button { position: relative; width: 46px; height: 46px; border: 0; border-radius: 10px; background: transparent; font-size: 24px;
+  cursor: pointer; color: #fff; flex: none; }
+.gt-leiste button:hover { background: rgba(255, 255, 255, 0.12); }
+.gt-leiste button.aktiv { background: #ffd966; box-shadow: inset 0 0 0 2px #fff3; }
+.gt-leiste hr { width: 70%; border: 0; border-top: 1px solid #fff3; margin: 2px auto; }
+.gt-punkt { position: absolute; right: 4px; bottom: 4px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #fff; }
+
+.gt-optionen { position: absolute; left: 70px; z-index: 6; background: rgba(250, 250, 250, 0.98); border-radius: 12px; padding: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45); display: flex; flex-direction: column; gap: 6px; }
+.gt-opt-zeile { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.gt-farbe { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px #aaa; cursor: pointer; padding: 0; display: inline-block; }
+.gt-farbe.eckig { border-radius: 6px; }
+.gt-farbe.aktiv { box-shadow: 0 0 0 3px #2e9d5b; }
+.gt-staerke, .gt-art { width: 40px; height: 36px; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; }
+.gt-staerke i { background: #333; border-radius: 50%; display: block; }
+.gt-staerke.aktiv, .gt-art.aktiv { border-color: #2e9d5b; background: #e8f7ee; }
+
+/* Hinweise oben, Seiten, Zoom, Melden */
+.gt-pill { position: absolute; top: 8px; right: auto; left: 8px; z-index: 4; background: rgba(0, 0, 0, 0.55); color: #fff;
+  border-radius: 16px; padding: 4px 14px; font-size: 15px; white-space: nowrap; pointer-events: none; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
+.gt-pill-status { color: #ffd966; }
+.gt-seiten { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; align-items: center; gap: 6px;
+  background: rgba(0, 0, 0, 0.55); color: #fff; border-radius: 16px; padding: 3px 8px; font-size: 14px; }
+.gt-seiten button, .gt-zoom button { border: 0; background: rgba(255, 255, 255, 0.15); color: #fff; border-radius: 10px; min-width: 36px; height: 32px;
+  font-size: 16px; cursor: pointer; }
+.gt-seiten button:disabled { opacity: 0.3; }
+.gt-zoom { position: absolute; right: 10px; bottom: 10px; z-index: 4; display: flex; gap: 4px; background: rgba(0, 0, 0, 0.55); padding: 4px; border-radius: 14px; }
+.gt-melden { position: absolute; right: 14px; bottom: 14px; z-index: 5; border: 0; border-radius: 22px; padding: 12px 20px; font-size: 18px;
+  font-weight: bold; background: #f4f1e6; color: #1f3b2c; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); cursor: pointer; }
+.gt-melden.aktiv { background: #ffd966; }
+.gt-banner { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); z-index: 20; background: #c0392b; color: #fff;
+  padding: 8px 18px; border-radius: 10px; font-weight: bold; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+.gt-auswahlmenue { position: absolute; z-index: 7; display: flex; gap: 4px; background: #fff; border-radius: 12px; padding: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+.gt-auswahlmenue button { border: 0; background: #f1f3f7; border-radius: 9px; padding: 8px 12px; font-size: 15px; cursor: pointer; white-space: nowrap; }
+[hidden] { display: none !important; }
+
+/* Dialoge */
+.gt-dialog-hg { position: absolute; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.35); display: flex; align-items: center; justify-content: center; }
+.gt-dialog { background: #fff; border-radius: 14px; width: min(440px, 94%); max-height: 94%; display: flex; flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); overflow: hidden; color: #222; -webkit-user-select: text; user-select: text; }
+.gt-dialog.breit { width: min(780px, 96%); }
+.gt-dialog-kopf { background: #2b4a6f; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 17px; }
+.gt-x { border: 0; background: transparent; color: #fff; font-size: 20px; cursor: pointer; }
+.gt-dialog-inhalt { padding: 14px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.gt-dialog-fuss { padding: 10px 14px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #eee; }
+.gt-dialog-fuss button, .gt-texteditor-knoepfe button { border: 1px solid #ccd; background: #f4f6fa; border-radius: 9px; padding: 9px 16px; font-size: 16px; cursor: pointer; }
+.gt-dialog-fuss button.haupt, .gt-texteditor-knoepfe .haupt { background: #2e9d5b; border-color: #2e9d5b; color: #fff; font-weight: bold; }
+button:disabled { opacity: 0.45; cursor: default; }
+.gt-eingabe { width: 100%; box-sizing: border-box; border: 2px solid #9ab; border-radius: 9px; padding: 10px; font-size: 20px; background: #f7faff; }
+.gt-mono { font-family: Consolas, "SF Mono", Menlo, monospace; }
+.gt-vorschau { min-height: 90px; border-radius: 10px; background: #23402f; display: flex; align-items: center; justify-content: center; padding: 10px; overflow: auto; }
+.gt-vorschau.fehlerhaft { outline: 3px solid #e74c3c; opacity: 0.6; }
+.gt-leer { color: #fff8; font-style: italic; }
+.gt-fehler { color: #c0392b; font-weight: bold; min-height: 1em; }
+.gt-hinweis { color: #666; font-size: 14px; }
+.gt-hinweis code, .gt-formelhilfe code { background: #eef; padding: 1px 4px; border-radius: 4px; }
+.gt-tasten { display: flex; flex-wrap: wrap; gap: 5px; }
+.gt-tasten button { border: 1px solid #ccd; background: #f4f6fa; border-radius: 8px; padding: 7px 11px; font-size: 17px; cursor: pointer; min-width: 40px; }
+.gt-tasten button.aktiv { background: #ffd966; }
+.gt-reiter { display: flex; gap: 6px; }
+.gt-reiter button { border: 1px solid #ccd; background: #fff; border-radius: 16px; padding: 6px 16px; font-size: 15px; cursor: pointer; }
+.gt-reiter button.aktiv { background: #2e9d5b; border-color: #2e9d5b; color: #fff; }
+
+.gt-texteditor { position: absolute; z-index: 25; width: 360px; background: #fff; border-radius: 12px; padding: 8px; box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; gap: 6px; -webkit-user-select: text; user-select: text; }
+.gt-texteditor textarea { min-height: 80px; border-radius: 8px; border: 2px solid #9ab; padding: 8px; font-family: "Trebuchet MS", Arial, sans-serif; resize: vertical; }
+.gt-texteditor .gt-tasten button { padding: 4px 8px; font-size: 15px; min-width: 30px; }
+.gt-texteditor-knoepfe { display: flex; gap: 6px; justify-content: flex-end; }
+
+.gt-zuschnitt { position: relative; align-self: center; line-height: 0; }
+.gt-zuschnitt canvas { border-radius: 6px; max-width: 100%; }
+.gt-rahmen { position: absolute; border: 3px solid #ffd966; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); pointer-events: none; }
+.gt-rahmen i { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: #ffd966; border: 3px solid #fff; pointer-events: auto; touch-action: none; }
+.gt-rahmen i[data-e="lt"] { left: -17px; top: -17px; } .gt-rahmen i[data-e="rt"] { right: -17px; top: -17px; }
+.gt-rahmen i[data-e="lb"] { left: -17px; bottom: -17px; } .gt-rahmen i[data-e="rb"] { right: -17px; bottom: -17px; }
+
+.gt-abwahl { display: flex; gap: 12px; flex-wrap: wrap; }
+.gt-abliste { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
+.gt-abvorschau { flex: 1.4; min-width: 240px; display: flex; flex-direction: column; gap: 6px; }
+.gt-abeintrag { text-align: left; border: 2px solid #e3e3e3; border-radius: 10px; background: #fff; padding: 9px; cursor: pointer; display: grid;
+  grid-template-columns: 1fr auto; font-size: 15px; }
+.gt-abeintrag small { color: #888; grid-column: 1; }
+.gt-abeintrag span { grid-row: 1 / span 2; grid-column: 2; align-self: center; border-radius: 9px; padding: 2px 8px; font-size: 12px; font-weight: bold; }
+.gt-abeintrag span.ok { background: #e8f7ee; color: #2e9d5b; } .gt-abeintrag span.leer { background: #eee; color: #999; }
+.gt-abeintrag.aktiv { border-color: #2e9d5b; background: #f3fbf6; }
+.gt-abkarte { background: #fbfaf5; border-left: 6px solid #4a6fa5; border-radius: 6px; padding: 10px 12px; font-size: 16px; line-height: 1.6;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); color: #2a2a2a; }
+.gt-abkarte-kopf { color: #1b3a6b; margin-bottom: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+.gt-abkarte mark { background: #ffe98a; font-weight: bold; color: #1b3a6b; padding: 0 4px; border-radius: 4px; }
+
+/* Aufgaben: Feld-Editor */
+.gt-feldeditor { position: absolute; z-index: 26; background: #fff; border-radius: 12px; padding: 8px; min-width: 260px; max-width: min(560px, 92%);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 8px; -webkit-user-select: text; user-select: text; }
+.gt-feldeditor.gross { width: min(560px, 92%); }
+.gt-feldeditor.gross textarea { min-height: 140px; font-size: 18px; resize: vertical; }
+.gt-feldeditor-fuss { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.gt-feldeditor-fuss button { border: 1px solid #ccd; background: #f4f6fa; border-radius: 9px; padding: 8px 14px; font-size: 16px; cursor: pointer; }
+.gt-feldeditor-fuss .haupt { background: #2e9d5b; border-color: #2e9d5b; color: #fff; font-weight: bold; }
+.gt-feldeditor-fuss .gt-loesungknopf, .gt-loesungknopf { margin-right: auto; background: #eaf3de; border-color: #639922; color: #27500a; }
+.gt-wortbank { display: flex; flex-wrap: wrap; gap: 8px; }
+.gt-wortbank button { border: 2px solid #c4cbd6; background: #fbfaf5; border-radius: 12px; padding: 12px 18px; font-size: 20px; min-height: 52px;
+  cursor: pointer; font-family: "Trebuchet MS", Arial, sans-serif; color: #1b3a6b; }
+.gt-wortbank button.aktiv { border-color: #4a6fa5; background: #e6f1fb; font-weight: bold; }
+
+/* Meldungen */
+#gt-toast { position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; }
+.gt-toast { background: rgba(30, 30, 30, 0.92); color: #fff; padding: 9px 18px; border-radius: 10px; font-size: 15px; transition: opacity 0.5s; font-family: "Segoe UI", Arial, sans-serif; }
+.gt-toast.fehler { background: #c0392b; }
+.gt-toast.weg { opacity: 0; }

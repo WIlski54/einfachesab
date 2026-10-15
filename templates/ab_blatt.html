@@ -1,0 +1,17 @@
+<main class="blatt" id="blatt">
+  <header class="kopf">
+    <div>
+      <div class="schule">{{ ab.schule }}</div>
+      <h1>{{ ab.titel }}</h1>
+      <div class="fach">{{ ab.fach }} · {{ ab.klasse }} · Arbeitsblatt</div>
+    </div>
+    <img class="kopf-logo" src="{{ url_for('static', filename='img/logo-gsm-transparent.png') }}" alt="Gesamtschule Meiderich">
+  </header>
+
+  <div class="personalien">
+    <div class="pers">Name: <span class="schrift">{{ pseudonym }}</span></div>
+    <div class="pers">Datum: <span class="schrift">{{ datum }}</span></div>
+  </div>
+
+  {% include 'ab_inhalt.html' %}
+</main>

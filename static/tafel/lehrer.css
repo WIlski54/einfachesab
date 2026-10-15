@@ -1,0 +1,55 @@
+/* Lehrer-Oberflächen: ☰-Leiste und Dashboard-Bausteine */
+.lehrer-knoepfe { position: fixed; top: 8px; right: 10px; z-index: 45; display: flex; gap: 6px; }
+.lehrer-knoepfe button { border: 0; border-radius: 12px; background: rgba(244, 241, 230, 0.93); color: #1f3b2c; font-size: 20px; font-weight: bold;
+  min-width: 48px; height: 44px; padding: 0 12px; cursor: pointer; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45); }
+.lehrer-knoepfe button.an { background: #ffd966; }
+.lehrer-leiste { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw); z-index: 44; background: rgba(250, 250, 250, 0.98);
+  box-shadow: -4px 0 18px rgba(0, 0, 0, 0.45); padding: 60px 12px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+  font-family: "Segoe UI", system-ui, Arial, sans-serif; color: #222; }
+.ll-kopf { display: flex; justify-content: space-between; align-items: center; font-size: 17px; }
+.ll-abschnitt { background: #fff; border: 1px solid #e3e7ee; border-radius: 10px; padding: 8px 10px; }
+.ll-titel { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #778; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.ll-titel .schalter { text-transform: none; letter-spacing: 0; font-size: 12px; }
+.ll-zeile { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f1f1f1; gap: 6px; font-size: 15px; }
+.ll-zeile.offline { opacity: 0.55; }
+.ll-unter { padding: 4px 0 6px 20px; display: flex; flex-direction: column; gap: 4px; }
+.ll-aufgabe { display: flex; justify-content: space-between; align-items: center; font-size: 14px; gap: 6px; }
+.ll-knoepfe { display: flex; flex-wrap: wrap; gap: 5px; }
+.gt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.gt-chip { border: 2px solid #ccd; border-radius: 10px; background: #fff; padding: 6px 10px; font-size: 14px; cursor: pointer; }
+.gt-chip.an { border-color: #2e9d5b; background: #e8f7ee; font-weight: bold; }
+.gt-schalterliste { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.gt-hgwahl { display: flex; gap: 6px; flex-wrap: wrap; }
+.gt-hg { width: 62px; height: 44px; border-radius: 5px; border: 3px solid #ccc; cursor: pointer; position: relative; background: #23402f; padding: 0; }
+.gt-hg span { position: absolute; left: 0; right: 0; bottom: -18px; font-size: 10px; color: #667; }
+.gt-hg.an { border-color: #2e9d5b; }
+.gt-hgwahl { padding-bottom: 16px; }
+.gt-hg-kariert { background-image: linear-gradient(#3a5c48 1px, transparent 1px), linear-gradient(90deg, #3a5c48 1px, transparent 1px); background-size: 8px 8px; }
+.gt-hg-liniert { background-image: linear-gradient(#3a5c48 1px, transparent 1px); background-size: 100% 8px; }
+.gt-hg-koordinaten { background: linear-gradient(#f4f1e6, #f4f1e6) 20% 0 / 1.5px 100% no-repeat, linear-gradient(#f4f1e6, #f4f1e6) 0 75% / 100% 1.5px no-repeat, #23402f; }
+.gt-hg-weiss { background: #fbfbf8; }
+.schalter.klein input { width: 16px; height: 16px; }
+.lehrer-leiste .schalter.klein { display: flex; margin-top: 4px; font-size: 13px; }
+/* Überschrift der Tafel */
+.ll-ueberschrift { display: flex; gap: 6px; margin: 2px 0 8px; }
+.ll-ueberschrift input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 7px 9px; border: 1px solid #c9d2dc; border-radius: 8px; }
+
+/* Überblick „Aufgabe an die Tafel“ */
+.ll-legende { font-size: 11px; color: #778; margin: 2px 0 6px; }
+.ll-aufgabe-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 5px 6px;
+  border-radius: 8px; border-left: 4px solid transparent; margin-bottom: 2px; font-size: 13px; }
+.ll-aufgabe-titel { line-height: 1.3; }
+.ll-niveaus { display: flex; gap: 3px; white-space: nowrap; }
+.ll-niveaus .knopf { min-width: 28px; padding: 4px 6px; text-align: center; }
+.ll-niveaus .knopf.benutzt { box-shadow: inset 0 -3px 0 #2e9d5b; }
+.ll-marke { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: bold; border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
+.ll-aufgabe-zeile.jetzt { background: #eef8f1; border-left-color: #2e9d5b; }
+.ll-aufgabe-zeile.jetzt .ll-marke { background: #2e9d5b; color: #fff; }
+.ll-aufgabe-zeile.jetzt.anders { background: #f1f5fb; border-left-color: #4a6fa5; }
+.ll-aufgabe-zeile.jetzt.anders .ll-marke { background: #4a6fa5; }
+.ll-aufgabe-zeile.fertig { border-left-color: #b8c2cc; }
+.ll-aufgabe-zeile.fertig .ll-marke { background: #e8edf2; color: #3d4c5c; }
+.ll-aufgabe-zeile.war .ll-marke { background: #fff3c4; color: #7a5a00; }
+.gt-pdfseiten { display: flex; flex-wrap: wrap; gap: 8px; }
+.gt-pdfseite { border: 3px solid #ddd; border-radius: 6px; cursor: pointer; line-height: 0; }
+.gt-pdfseite.an { border-color: #2e9d5b; }

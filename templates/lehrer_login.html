@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lehrerbereich – Anmelden</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/seiten.css', v=v) }}">
+</head>
+<body>
+<div class="kopfband">
+  <div>
+    <h1>Lehrerbereich</h1>
+    <div class="unter">Einfaches digitales Arbeitsblatt</div>
+  </div>
+  <img class="logo" src="{{ url_for('static', filename='img/logo-gsm.jpg') }}" alt="Gesamtschule Meiderich">
+</div>
+
+<div class="karte login-karte">
+  <h2>Anmelden</h2>
+  <form method="post">
+    <label for="password">Passwort</label>
+    <input id="password" name="password" type="password" required autofocus>
+    {% if error %}<div class="fehler">{{ error }}</div>{% endif %}
+    <button class="knopf voll" type="submit">Anmelden</button>
+  </form>
+</div>
+
+<div class="lehrerlink"><a href="{{ url_for('login') }}">← Zur Schüler-Anmeldung</a></div>
+</body>
+</html>

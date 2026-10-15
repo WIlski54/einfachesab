@@ -1,0 +1,25 @@
+{# Gemeinsamer Tafel-Baustein: Stylesheet + alle Skripte in der richtigen Reihenfolge.
+   Optionen (vor dem include per {% set %}):
+     tafel_ohne_socketio = true      wenn die Seite socket.io schon lädt
+     tafel_socketio = "vendor/…js"  Dateiname des socket.io-Clients (Standard: vendor/socket.io.min.js)
+     v = ASSET_VERSION               Cache-Busting #}
+{% set _v = v|default(none) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='tafel/tafel.css', v=_v) }}">
+{% if not tafel_ohne_socketio|default(false) %}<script src="{{ url_for('static', filename=tafel_socketio|default('vendor/socket.io.min.js'), v=_v) }}"></script>{% endif %}
+<script src="{{ url_for('static', filename='vendor/konva.min.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='vendor/perfect-freehand.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/auth.js', v=_v) }}"></script>
+<script>GT.mathjaxUrl = {{ url_for('static', filename='vendor/mathjax-tex-svg-full.js', v=_v)|tojson }};
+GT.pdfjsUrl = {{ url_for('static', filename='vendor/pdf.min.js', v=_v)|tojson }};
+GT.pdfjsWorkerUrl = {{ url_for('static', filename='vendor/pdf.worker.min.js', v=_v)|tojson }};</script>
+<script src="{{ url_for('static', filename='tafel/farben.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/formel.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/darstellung.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/aufgabe.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/buehne.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/tafel-app.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/werkzeugleiste.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/werkzeuge/zeichnen.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/werkzeuge/auswahl.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/werkzeuge/schreiben.js', v=_v) }}"></script>
+<script src="{{ url_for('static', filename='tafel/werkzeuge/medien.js', v=_v) }}"></script>

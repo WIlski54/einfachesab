@@ -1,0 +1,25 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; background: #eef2f7; color: #222; }
+.kopf { background: #2b4a6f; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.kopf h1 { font-size: 18px; margin: 0; }
+.kopf .rechts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.knopf { display: inline-block; border: 0; border-radius: 9px; padding: 9px 15px; font-size: 15px; font-weight: bold; cursor: pointer; text-decoration: none;
+  background: #fff; color: #2b4a6f; }
+.knopf.gruen { background: #2e9d5b; color: #fff; }
+.knopf.rot { background: #c0392b; color: #fff; }
+.knopf.klein { padding: 5px 10px; font-size: 13px; }
+.knopf.hell { background: #f1f3f7; color: #2b4a6f; border: 1px solid #ccd; }
+.karte { background: #fff; border: 1px solid #e0e4ea; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+.karte h2 { font-size: 16px; margin: 0 0 10px; }
+.login { max-width: 380px; margin: 10vh auto; display: flex; flex-direction: column; gap: 12px; }
+.login h1 { text-align: center; color: #2b4a6f; margin: 0 0 6px; }
+.login input { width: 100%; padding: 12px; font-size: 18px; border: 2px solid #b8c4d6; border-radius: 10px; }
+.login .fehler { color: #c0392b; font-weight: bold; min-height: 1.2em; }
+.logo { text-align: center; font-size: 56px; }
+.hinweis { color: #667; font-size: 14px; }
+.vollbild { position: fixed; inset: 0; }
+.schalter { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; padding: 3px 0; }
+.schalter input { width: 20px; height: 20px; accent-color: #2e9d5b; }
+.marke { display: inline-block; border-radius: 9px; padding: 2px 8px; font-size: 12px; font-weight: bold; }
+.marke.gruen { background: #2e9d5b; color: #fff; } .marke.grau { background: #e3e7ee; color: #556; } .marke.gelb { background: #fff3c4; color: #8a6d00; }
