@@ -63,10 +63,13 @@ python app.py               # http://localhost:5000
 Die Tafel (Sicherungsphase) kommt aus Deinem Skill `ab-bauen` (`references/tafel.md`). **Status: Pilotphase** – im Browser vollständig getestet,
 an echten iPads im Schul-WLAN noch nicht. Vor dem Einsatz die Praxistest-Checkliste aus `D:\KI Projekte\Tafel für AB Skill\README.md` durchgehen.
 
-- **Ein Klick (Normalfall):** Im Dashboard steht ✋ bei der Person und in der Liste „✋ Vorstellen“. Ein Klick auf das ✋ in der Matrix (oder „🖍️ An die Tafel“ in der Liste)
+- **Ansehen, dann an die Tafel (Normalfall):** Im Dashboard steht ✋ bei der Person und in der Liste „✋ Vorstellen“. Ein Klick auf das ✋ in der Matrix (oder „👁 Ansehen“ in der Liste)
+  öffnet **das AB der Person** über dem Dashboard – Du kannst die Aufgabe lesen, kommentieren, zeichnen. Oben in der Leiste steht „🖍️ Aufgabe N an die Tafel“: Ein Klick darauf (oder „🖍️ An die Tafel“ direkt in der Liste)
   startet die Tafel für **alle**: Alle iPads wechseln zur Tafel (nichts anderes bedienbar), die bearbeitete Aufgabe liegt als Karte auf der Tafel, und nur die vorstellende Person darf mit den
-  freigegebenen Werkzeugen (Stift, Marker, Radierer, Text, Formel, Formen, Laser, „Melden“) schreiben. Du siehst die Tafel im Dashboard-Bereich mit vollem Funktionsumfang.
-  Mit „▦“ oben rechts in der Tafel gehst Du zurück zum Dashboard – die Tafel läuft weiter („🖍️ Tafel läuft ●“ im Dashboard-Kopf). Der nächste Klick holt die nächste Person ran (die vorige wird abgezogen).
+  freigegebenen Werkzeugen (Stift, Marker, Radierer, Text, Formel, Formen, Laser, „Melden“) schreiben. „← Zurück“ schließt das AB wieder.
+- **Drei Ansichten für Dich (Schalter im Dashboard-Kopf, solange die Tafel läuft):** **🖍️ Tafel** (Vollbild), **◫ Geteilt** (Tafel links, Dashboard rechts – die Matrix bleibt im Blick, ein Klick auf einen Namen
+  öffnet dessen AB) und **▦ Klasse** (nur das Dashboard; die Tafel läuft für die Klasse unsichtbar weiter). Auch in der Tafel selbst: „◫“ = geteilt, „▦“ = Klasse. „✕“ schließt die Tafel-Ansicht
+  (die Klasse bleibt an der Tafel, „🖍️ Tafel läuft ●“ im Kopf). Der nächste Klick auf „an die Tafel“ holt die nächste Person ran (die vorige wird abgezogen).
 - **Manuell:** Dashboard → „🖍️ Tafel“ (`/lehrer/tafel`). Dort ☰ öffnen → „▶ Für Klasse starten“, Personen zuschalten/abziehen, 15 Werkzeuge, Aufgaben leer holen (Knopf „an die Tafel“ je Aufgabe) und live lösen lassen.
 - **Beamer:** `/lehrer/tafel/beamer` (nur Zuschauen). **Rückblick:** `/lehrer/tafel/rueckblick`.
 - **„Möchte ich vorstellen“** im AB-Rand legt ein **Angebot** an die Tafel (erst nach einer Eingabe in der Aufgabe). Im Dashboard steht die Warteschlange;

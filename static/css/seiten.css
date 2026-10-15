@@ -202,8 +202,29 @@ a.m.h-unterwegs { background: #fff8e1; border: 2px solid #d97706; }
 .ki-meldung.schlecht { color: #b91c1c; }
 
 /* ---------- Digitale Tafel im Dashboard ---------- */
+/* Ansichten: .tafel-voll (nur Tafel) · .tafel-geteilt (Tafel links, Klasse rechts) · .tafel-klasse (Tafel unsichtbar, läuft weiter) */
 #tafel-panel { position: fixed; inset: 0; z-index: 9000; background: #1a1a1a; }
 #tafel-panel[hidden] { display: none; }
 #tafel-rahmen { width: 100%; height: 100%; border: 0; display: block; }
-body.tafel-offen { overflow: hidden; }
+body.tafel-voll { overflow: hidden; }
+body.tafel-geteilt #tafel-panel { right: auto; width: 56vw; }
+body.tafel-geteilt { padding-left: 56vw; }
+body.tafel-geteilt .dash-grid { grid-template-columns: 1fr; }
+body.tafel-geteilt .queue { position: static; max-height: none; overflow: visible; }
+body.tafel-geteilt .kopfband .logo { display: none; }
+body.tafel-klasse #tafel-panel { visibility: hidden; pointer-events: none; }
 .knopf.hell.tafel-live { background: #16a34a; }
+.modi { display: inline-flex; }
+.modi[hidden] { display: none; }
+.modi .knopf { border-radius: 0; margin-left: -1px; }
+.modi .knopf:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
+.modi .knopf:last-child { border-radius: 0 8px 8px 0; }
+.modi .knopf.an { background: #fff; color: #0f172a; font-weight: bold; }
+
+/* AB einer Person hier ansehen: über allem, die Tafel läuft im Hintergrund weiter */
+#detail-panel { position: fixed; inset: 0; z-index: 9500; background: #e2e8f0; display: flex; flex-direction: column; }
+#detail-panel[hidden] { display: none; }
+.detail-leiste { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 14px; background: #0f172a; color: #fff; }
+#detail-aktionen { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+#detail-rahmen { flex: 1; width: 100%; border: 0; background: #e2e8f0; }
+body.detail-offen { overflow: hidden; }

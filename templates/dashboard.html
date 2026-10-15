@@ -26,6 +26,12 @@
   </div>
   <div class="aktionen">
     <button class="knopf hell" type="button" id="tafel-knopf" title="Digitale Tafel öffnen (Lehrkraft)">🖍️ Tafel</button>
+    <span class="modi" id="tafel-modi" hidden>
+      <button class="knopf hell" type="button" data-modus="voll" id="modus-voll" title="Nur die Tafel (Vollbild)">🖍️ Tafel</button>
+      <button class="knopf hell" type="button" data-modus="geteilt" title="Tafel links, Klasse rechts">◫ Geteilt</button>
+      <button class="knopf hell" type="button" data-modus="klasse" title="Nur die Klasse – die Tafel läuft im Hintergrund weiter">▦ Klasse</button>
+      <button class="knopf hell" type="button" id="tafel-zu-knopf" title="Tafel-Ansicht schließen (die Tafel läuft für die Klasse weiter)">✕</button>
+    </span>
     <a class="knopf hell" href="{{ url_for('tafel_rueckblick') }}" target="tafel-rueckblick" title="Rückblick auf die Tafel dieser Stunde">📋 Rückblick</a>
     <a class="knopf hell" href="{{ url_for('tafel_beamer') }}" target="tafel-beamer" title="Zuschauer-Ansicht für den Beamer">🖥️ Beamer</a>
     <button class="knopf hell" type="button" id="ki-knopf" aria-expanded="false" aria-controls="ki-panel">🤖 KI</button>
@@ -35,6 +41,16 @@
 </div>
 
 <div id="tafel-panel" hidden><iframe id="tafel-rahmen" title="Digitale Tafel"></iframe></div>
+
+<!-- AB einer Person ansehen / kommentieren / zeichnen – über allem, die Tafel läuft im Hintergrund weiter -->
+<div id="detail-panel" hidden>
+  <div class="detail-leiste">
+    <button class="knopf hell" type="button" id="detail-zurueck">← Zurück</button>
+    <strong id="detail-name"></strong>
+    <span id="detail-aktionen"></span>
+  </div>
+  <iframe id="detail-rahmen" title="Arbeitsblatt der Person"></iframe>
+</div>
 
 <section class="ki-panel" id="ki-panel" hidden>
   <div class="ki-zeile">
@@ -146,26 +162,86 @@
     });
   }
   // ---------- Digitale Tafel im Dashboard ----------
+  // Ansichten (die Tafel selbst läuft immer weiter, auch wenn man sie gerade nicht sieht):
+  //   voll = nur die Tafel · geteilt = Tafel links, Klasse rechts · klasse = nur die Klasse
   var tafelLive = false;
+  var tafelModus = null;                      // null = Tafel-Ansicht zu
   var tafelPanel = document.getElementById('tafel-panel');
   var tafelRahmen = document.getElementById('tafel-rahmen');
-  function tafelOeffnen() {
-    if (!tafelRahmen.getAttribute('src')) { tafelRahmen.setAttribute('src', '/lehrer/tafel'); }
-    tafelPanel.hidden = false;
-    document.body.classList.add('tafel-offen');
+  var detailPanel = document.getElementById('detail-panel');
+  var detailRahmen = document.getElementById('detail-rahmen');
+  var detailSid = null;
+
+  function modusSetzen(m) {
+    tafelModus = m || null;
+    if (tafelModus && !tafelRahmen.getAttribute('src')) { tafelRahmen.setAttribute('src', '/lehrer/tafel'); }
+    if (!tafelModus) { tafelRahmen.removeAttribute('src'); }
+    tafelPanel.hidden = !tafelModus;
+    ['voll', 'geteilt', 'klasse'].forEach(function (x) { document.body.classList.toggle('tafel-' + x, tafelModus === x); });
+    document.getElementById('tafel-knopf').hidden = !!tafelModus;
+    document.getElementById('tafel-modi').hidden = !tafelModus;
+    document.querySelectorAll('#tafel-modi [data-modus]').forEach(function (b) {
+      b.classList.toggle('an', b.getAttribute('data-modus') === tafelModus);
+    });
   }
-  function tafelSchliessen() {
-    tafelPanel.hidden = true;
-    tafelRahmen.removeAttribute('src');
-    document.body.classList.remove('tafel-offen');
-  }
-  window.addEventListener('message', function (e) {
-    if (e.origin === location.origin && e.data === 'tafel-zu') { tafelSchliessen(); }
+  function tafelOeffnen() { modusSetzen(tafelModus && tafelModus !== 'klasse' ? tafelModus : 'voll'); }
+  document.querySelectorAll('#tafel-modi [data-modus]').forEach(function (b) {
+    b.addEventListener('click', function () { modusSetzen(b.getAttribute('data-modus')); });
   });
+  document.getElementById('tafel-zu-knopf').addEventListener('click', function () { modusSetzen(null); });
+
+  // ---------- AB einer Person ansehen (Kommentare, Zeichnen) ----------
+  function detailLeiste() {
+    if (detailPanel.hidden) { return; }
+    var s = schueler[detailSid];
+    document.getElementById('detail-name').textContent = s ? s.pseudonym : '';
+    var box = document.getElementById('detail-aktionen');
+    box.innerHTML = '';
+    ((s && s.vorstellen) || []).forEach(function (v) {
+      var b = el('button', 'mini gruen', '🖍️ Aufgabe ' + v.nr + ' an die Tafel');
+      b.type = 'button';
+      b.addEventListener('click', function () { anDieTafel(s.id, v.nr); });
+      box.appendChild(b);
+    });
+  }
+  function detailOeffnen(url) {
+    var m = /\/lehrer\/schueler\/([^#?]+)/.exec(url);
+    detailSid = m ? decodeURIComponent(m[1]) : null;
+    detailRahmen.setAttribute('src', url);
+    detailPanel.hidden = false;
+    document.body.classList.add('detail-offen');
+    detailLeiste();
+  }
+  function detailSchliessen() {
+    detailPanel.hidden = true;
+    detailRahmen.removeAttribute('src');
+    document.body.classList.remove('detail-offen');
+    detailSid = null;
+  }
+  document.getElementById('detail-zurueck').addEventListener('click', detailSchliessen);
+  // Ein Klick auf Name oder Aufgabe öffnet das AB hier (Strg/Cmd-Klick: wie gewohnt in neuem Tab)
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="/lehrer/schueler/"]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) { return; }
+    e.preventDefault();
+    detailOeffnen(a.getAttribute('href'));
+  });
+
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || typeof e.data !== 'string') { return; }
+    if (e.data === 'tafel-zu') {                                   // Tafel-Seite im Rahmen wollte „zurück“
+      if (!detailPanel.hidden) { detailSchliessen(); } else { modusSetzen('klasse'); }
+    } else if (e.data.indexOf('tafel-modus:') === 0) {
+      modusSetzen(e.data.slice(12));
+    } else if (e.data === 'detail-tafel') {
+      detailSchliessen(); tafelOeffnen();
+    }
+  });
+
   function anDieTafel(sid, nr) {
     socket.emit('vorstellen_tafel', { schueler_id: sid, aufgabe: nr }, function (res) {
       if (res && res.ok) {
-        if (tafelRahmen.getAttribute('src')) { tafelRahmen.src = '/lehrer/tafel'; }    // frisch laden, falls schon offen
+        detailSchliessen();
         tafelOeffnen();
       } else if (res && res.fehler === 'leer') {
         alert('In dieser Aufgabe steht noch nichts – da gibt es nichts vorzustellen.');
@@ -178,8 +254,9 @@
   var tafelKanal = io('/tafel', { transports: ['polling', 'websocket'] });
   function tafelStatus(d) {
     tafelLive = d && d.modus === 'live';
-    var k = document.getElementById('tafel-knopf');
+    var k = document.getElementById('tafel-knopf'), v = document.getElementById('modus-voll');
     k.textContent = tafelLive ? '🖍️ Tafel läuft ●' : '🖍️ Tafel';
+    v.textContent = tafelLive ? '🖍️ Tafel ●' : '🖍️ Tafel';
     k.classList.toggle('tafel-live', tafelLive);
   }
   tafelKanal.on('tafel:meta', tafelStatus);
@@ -307,6 +384,10 @@
       var row = el('div', 'vorstellen-zeile');
       row.appendChild(el('span', '', z.s.pseudonym + ' · Aufgabe ' + z.v.nr));
       var akt = el('span', 'zeile-aktionen');
+      var an = el('button', 'mini', '👁 Ansehen');
+      an.type = 'button';
+      an.addEventListener('click', function () { detailOeffnen(link(z.s, z.v.nr)); });
+      akt.appendChild(an);
       var go = el('button', 'mini gruen', '🖍️ An die Tafel');
       go.type = 'button';
       go.addEventListener('click', function () { anDieTafel(z.s.id, z.v.nr); });
@@ -392,9 +473,8 @@
         var ln = el('a', z.cls, z.sym);
         ln.href = link(s, nr);
         ln.title = z.tip;
-        if (s.vorstellen.some(function (x) { return x.nr === nr; })) {      // ✋ = Klick bringt die Person an die Tafel
-          ln.title = s.pseudonym + ' möchte Aufgabe ' + nr + ' vorstellen – Klick: an die Tafel';
-          ln.addEventListener('click', function (e) { e.preventDefault(); anDieTafel(s.id, nr); });
+        if (s.vorstellen.some(function (x) { return x.nr === nr; })) {      // ✋ = ansehen, dort „an die Tafel“
+          ln.title = s.pseudonym + ' möchte Aufgabe ' + nr + ' vorstellen – Klick: ansehen (dann „an die Tafel“)';
         }
         td.appendChild(ln);
         row.appendChild(td);
@@ -438,6 +518,7 @@
     document.getElementById('k-hilfe').textContent = offen;
     document.getElementById('k-vorstellen').textContent = wartend;
     document.getElementById('kz-hilfe-box').classList.toggle('an', offen > 0);
+    detailLeiste();
   }
 
   // Viele Events in kurzer Zeit (alle tippen) -> höchstens alle 150 ms neu zeichnen

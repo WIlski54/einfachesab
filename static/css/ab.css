@@ -314,3 +314,6 @@ body.tafel-aktiv { overflow: hidden; }
   padding: 8px 14px; border-radius: 999px; font: 600 14px system-ui, sans-serif; text-decoration: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
 }
+
+/* Im Dashboard-Rahmen: eigene Navigation ausblenden (das Dashboard hat „← Zurück“ und die Tafel-Schalter) */
+body.im-rahmen .leiste .links a, body.im-rahmen .leiste .rechts a { display: none; }

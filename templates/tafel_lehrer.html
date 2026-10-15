@@ -21,7 +21,8 @@
 <body>
 <div id="tafel" class="vollbild"></div>
 <div class="lehrer-knoepfe">
-  <button id="zurueck" title="Zurück zum Dashboard (die Tafel läuft weiter)">▦</button>
+  <button id="geteilt" title="Geteilte Ansicht: Tafel links, Klasse rechts" hidden>◫</button>
+  <button id="zurueck" title="Zur Klasse (Dashboard) – die Tafel läuft weiter">▦</button>
   <button id="stift" title="Meine Werkzeugleiste ein-/ausblenden">✏️</button>
   <button id="menue" title="Tafel-Steuerung">☰</button>
 </div>
@@ -33,9 +34,13 @@
   const aside = document.getElementById("leiste");
   const leiste = new GT.LehrerLeiste(aside, app);
   const stift = document.getElementById("stift"), menue = document.getElementById("menue");
-  // Zurück zum Dashboard: im Dashboard-Rahmen dort schließen, sonst normal wechseln (die Tafel läuft weiter)
+  // Im Dashboard-Rahmen: Ansicht dort umschalten (die Tafel läuft immer weiter), sonst normal zum Dashboard
+  const imRahmen = window.top !== window.self;
+  const geteilt = document.getElementById("geteilt");
+  geteilt.hidden = !imRahmen;
+  geteilt.onclick = () => window.top.postMessage("tafel-modus:geteilt", location.origin);
   document.getElementById("zurueck").onclick = () => {
-    if (window.top !== window.self) window.top.postMessage("tafel-zu", location.origin);
+    if (imRahmen) window.top.postMessage("tafel-modus:klasse", location.origin);
     else location.href = "/lehrer";
   };
   let erstesMal = true;
