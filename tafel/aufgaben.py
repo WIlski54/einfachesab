@@ -9,7 +9,8 @@ import re
 import unicodedata
 
 MAX_LAENGE = {"lueckentext": 60, "zuordnung": 60, "mc": 200, "freitext": 2000, "sortieren": 200,
-              "richtigfalsch": 10}
+              "richtigfalsch": 10, "tabelle": 60, "schalen": 2}
+SCHALEN_MAX = 18   # Elektronen je Schale im Schalenmodell (Fehler wie 3 Elektronen in K bleiben möglich)
 RICHTIG_FALSCH = ["richtig", "falsch"]
 _TIEF = str.maketrans("₀₁₂₃₄₅₆₇₈₉⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻", "01234567890123456789+-")
 
@@ -34,7 +35,20 @@ def feld_ids(objekt):
         return [f"p{i}" for i in range(len(objekt.get("elemente", [])))]
     if typ == "richtigfalsch":
         return [a["feld"] for a in objekt.get("aussagen", [])]
+    if typ == "tabelle":
+        return [z["feld"] for zeile in objekt.get("zeilen", []) for z in zeile if "feld" in z]
+    if typ == "schalen":
+        return ["s0", "s1", "s2"]
     return ["text"]
+
+
+def zelle(objekt, feld):
+    """Die Tabellenzelle zu einem Feld (art: None = Text, "haken" = Ankreuzfeld; zahl = Zifferntastatur)."""
+    for zeile in objekt.get("zeilen", []):
+        for z in zeile:
+            if z.get("feld") == feld:
+                return z
+    return {}
 
 
 def optionen(objekt):
@@ -57,6 +71,10 @@ def wert_pruefen(objekt, feld, wert):
         raise ValueError("Ungültiger Wert.")
     typ = objekt.get("aufgabentyp")
     wert = wert[:MAX_LAENGE.get(typ, 200)]
+    if typ == "tabelle" and zelle(objekt, feld).get("art") == "haken" and wert not in ("", "true", "false"):
+        raise ValueError("Ungültiger Wert.")
+    if typ == "schalen" and wert and not (wert.isdigit() and 0 <= int(wert) <= SCHALEN_MAX):
+        raise ValueError("So viele Elektronen passen nicht auf eine Schale.")
     erlaubt = optionen(objekt)
     if erlaubt is not None and wert:
         teile = wert.split("|") if objekt.get("mehrfach") else [wert]
@@ -91,7 +109,7 @@ def pruefen(objekt, loesung):
         if feld not in loesung:
             continue
         f = dict(felder.get(feld) or {"wert": "", "von_id": None, "von": None, "alt": None})
-        richtig = _stimmt(objekt, f.get("wert"), loesung[feld])
+        richtig = _stimmt(objekt, f.get("wert"), loesung[feld], feld)
         f["status"] = "richtig" if richtig else "falsch"
         zaehler[f["status"]] += 1
         felder[feld] = f
@@ -108,14 +126,18 @@ def loesung_einsetzen(objekt, loesung, nur_feld=None):
         f = dict(felder.get(feld) or {"wert": "", "alt": None})
         if f.get("status") == "richtig" and not nur_feld:
             continue
-        if f.get("wert") and not _stimmt(objekt, f["wert"], loesung[feld]):
+        if f.get("wert") and not _stimmt(objekt, f["wert"], loesung[feld], feld):
             f["alt"] = f.get("alt") or f["wert"]
         f.update(wert=loesung[feld][0], status="richtig", von_id="lehrer", von="Lehrkraft")
         felder[feld] = f
     return felder
 
 
-def _stimmt(objekt, wert, akzeptiert):
+def _stimmt(objekt, wert, akzeptiert, feld=None):
+    if objekt.get("aufgabentyp") == "tabelle" and zelle(objekt, feld).get("art") == "haken":
+        return (wert == "true") == (akzeptiert[0] == "true")   # nicht angekreuzt = „false“
+    if objekt.get("aufgabentyp") == "schalen":
+        return str(int(wert)) in akzeptiert if str(wert or "").isdigit() else False
     if objekt.get("mehrfach"):  # Mehrfachauswahl: dieselbe Menge
         menge = lambda s: frozenset(normalisieren(t) for t in str(s or "").split("|") if t)
         return menge(wert) in {menge(a) for a in akzeptiert}
@@ -123,7 +145,7 @@ def _stimmt(objekt, wert, akzeptiert):
 
 
 # ---------- Vom Browser gelieferte Aufgaben und Karten prüfen ----------
-TYPEN = ("lueckentext", "zuordnung", "mc", "freitext", "sortieren", "richtigfalsch")
+TYPEN = ("lueckentext", "zuordnung", "mc", "freitext", "sortieren", "richtigfalsch", "tabelle", "schalen")
 
 
 def _text(wert, laenge, pflicht=False):
@@ -174,6 +196,30 @@ def aufgabe_bereinigen(a):
         aussagen = _liste(a.get("aussagen"), 25)
         sauber.update(aussagen=[{"feld": f"r{i}", "text": _text(x.get("text") if isinstance(x, dict) else None, 400, True)}
                                 for i, x in enumerate(aussagen)])
+    elif typ == "tabelle":
+        zeilen, n = [], 0
+        for zeile in _liste(a.get("zeilen"), 30):
+            neu = []
+            for z in _liste(zeile, 10):
+                if isinstance(z, dict) and "feld" in z:
+                    c = {"feld": f"c{n}"}
+                    n += 1
+                    if z.get("art") == "haken":
+                        c["art"] = "haken"
+                    if z.get("zahl"):
+                        c["zahl"] = True
+                    neu.append(c)
+                elif isinstance(z, dict):
+                    neu.append({"text": _text(z.get("text"), 200, False) or ""})
+                else:
+                    raise ValueError("Ungültige Zelle.")
+            zeilen.append(neu)
+        sauber.update(frage=_text(a.get("frage"), 1500, False) or "",
+                      spalten=[_text(c, 80, False) or "" for c in _liste(a.get("spalten", []), 10)],
+                      breiten=[float(b) for b in _liste(a.get("breiten", []), 10) if isinstance(b, (int, float))],
+                      zeilen=zeilen)
+    elif typ == "schalen":
+        sauber.update(frage=_text(a.get("frage"), 1500, False) or "", kern=_text(a.get("kern"), 20, False) or "")
     else:
         sauber.update(frage=_text(a.get("frage"), 1500, True))
     return sauber

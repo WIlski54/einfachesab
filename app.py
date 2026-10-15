@@ -1303,6 +1303,9 @@ def asset_version_einsetzen():
 tafel_server = tafel_einbinden(
     app, socketio, get_db=roh_db, anzahl_aufgaben=ANZAHL_AUFGABEN, lehrer_required=lehrer_required,
     asset_version=ASSET_VERSION, titel=AB_META['titel'], bei_angeboten=vorstellen_melden)
+# Platz für die Aufgabenkarten (Tabellen sind breiter und höher als die Standardkarte; die Tafel ist 1500 × 1000)
+tafel_server.KARTEN_GROESSE = {**tafel_server.KARTEN_GROESSE, 'aufgabe': (700, 440)}
+tafel_server.FREIE_PLAETZE = ((30, 90), (780, 90), (30, 560), (780, 560))
 
 
 if __name__ == '__main__':

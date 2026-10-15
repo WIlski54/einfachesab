@@ -233,9 +233,10 @@
     return frage.height() + 14 + h;
   }
 
+  GT.aufgabeHelfer = { SCHRIFT, STIL, zustand, messen, textHoehe, feldKasten, senden: (...a) => senden(...a) };
   GT.zeichner = GT.zeichner || {};
   GT.zeichner.aufgabe = (g, o) => {
-    const B = 640, P = 22, fs = 24, breite = B - 2 * P - 6;
+    const B = o.kartenbreite || 640, P = 22, fs = 24, breite = B - 2 * P - 6;
     const inhalt = new Konva.Group();
     // Titel umbricht innerhalb der Karte – egal wie lang er ist
     const titel = new Konva.Text({ x: P + 6, y: P, width: breite, wrap: "word", lineHeight: 1.15, text: "📋 " + (o.titel || "Aufgabe"),
@@ -247,7 +248,8 @@
     const linieY = metaY + 30;
     inhalt.add(new Konva.Line({ points: [P + 6, linieY, B - P, linieY], stroke: "#e2d7c2", strokeWidth: 2 }));
     const y = linieY + 24;
-    const h = { lueckentext, zuordnung, mc, freitext, sortieren, richtigfalsch }[o.aufgabentyp] || freitext;
+    const h = (GT.aufgabenZeichner && GT.aufgabenZeichner[o.aufgabentyp]) ||
+      { lueckentext, zuordnung, mc, freitext, sortieren, richtigfalsch }[o.aufgabentyp] || freitext;
     const hoehe = y + h(inhalt, o, P + 6, y, breite, fs) + P;
     g.add(new Konva.Rect({ width: B, height: hoehe, fill: "#fbfaf5", cornerRadius: 6, shadowColor: "#000", shadowBlur: 14, shadowOpacity: 0.4, shadowOffset: { x: 3, y: 4 } }));
     g.add(new Konva.Rect({ width: 8, height: hoehe, fill: "#e8a33d", cornerRadius: [6, 0, 0, 6] }));
@@ -303,6 +305,8 @@
     if (app.dialoge.querySelector(".gt-feldeditor")) return true;
     const feld = knoten.getAttr("feld");
     const seite = app.z.aktuelle_seite;
+    const eigene = GT.aufgabenAntippen && GT.aufgabenAntippen[obj.aufgabentyp];  // Erweiterung (aufgabe_ab.js)
+    if (eigene) { const r = await eigene(app, knoten, obj, feld); if (r !== undefined) return r; }
     if (obj.aufgabentyp === "mc" || obj.aufgabentyp === "richtigfalsch") {
       const a = await app.emit("tafel:feld_fokus", { seite, id: obj.id, feld, an: true });
       if (!a.ok) { GT.toast(a.grund, "fehler"); return true; }
@@ -346,6 +350,8 @@
       const eingabe = document.createElement(mehrzeilig ? "textarea" : "input");
       eingabe.className = "gt-eingabe";
       eingabe.value = f.wert || "";
+      const art = GT.feldEingabeart && GT.feldEingabeart(obj, feld);
+      if (art) eingabe.setAttribute("inputmode", art);
       eingabe.setAttribute("autocomplete", "off");
       eingabe.setAttribute("autocapitalize", "off");
       eingabe.setAttribute("spellcheck", "false");

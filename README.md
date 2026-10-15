@@ -34,6 +34,7 @@ python app.py               # http://localhost:5000
 | `tafel_anbindung.py` | Hängt die Tafel an dieses AB: Login (Session), Speicher (SQLite), Seiten `/lehrer/tafel…` |
 | `tafel_aufgaben.py` | Tafel-Fassungen der Aufgaben (eine je Aufgabe) mit Lösungen **nur auf dem Server** + wie AB-Antworten als Karten an die Tafel kommen |
 | `templates/tafel_lehrer.html`, `tafel_rueckblick.html`, `tafel_beamer.html`, `_tafel.html` | Tafel-Seiten für Lehrkraft, Rückblick, Beamer |
+| `static/tafel/aufgabe_ab.js` | **Erweiterung des Tafel-Bausteins** um die Aufgabentypen `tabelle` und `schalen` (hängt sich in `aufgabe.js` ein). Dazu kleine Ergänzungen in `tafel/aufgaben.py` und `static/tafel/aufgabe.js` – beim Austausch des Bausteins aus dem Skill wieder einspielen |
 | `static/tafel/`, `static/vendor/` | Tafel-Oberfläche und Bibliotheken (Konva, MathJax, pdf.js, jsPDF, socket.io) – alles lokal, kein CDN nötig |
 | `static/js/tafel_schueler.js` | Schülerseite: Tafel-Overlay und „Tafelbild der Stunde“ |
 | `static/js/ab.js` | Felder, Live-Speichern, Schalenmodell, „Möchte ich vorstellen“ |
@@ -66,9 +67,11 @@ an echten iPads im Schul-WLAN noch nicht. Vor dem Einsatz die Praxistest-Checkli
 - **Ansehen, dann an die Tafel (Normalfall):** Im Dashboard steht ✋ bei der Person und in der Liste „✋ Vorstellen“. Ein Klick auf das ✋ in der Matrix (oder „👁 Ansehen“ in der Liste)
   öffnet **das AB der Person** über dem Dashboard – Du kannst die Aufgabe lesen, kommentieren, zeichnen. Oben in der Leiste wählst Du die Aufgabe (✋ = hat sich gemeldet) und klickst „🖍️ An die Tafel“
   (jede Person und jede Aufgabe geht, auch ohne Meldung). Das startet die Tafel für **alle**: Alle iPads wechseln zur Tafel (nichts anderes bedienbar). „← Zurück“ schließt das AB wieder.
-- **Die Aufgabe an der Tafel ist bearbeitbar:** Sie liegt dort mit den **Antworten aus dem AB** (Aufgabe 1, 2, 3, 5 als Lückentext mit denselben Feldern wie im AB, Aufgabe 6 als Textfeld). Die zugeschaltete
-  Person tippt ein Feld an und **ergänzt per Tastatur** – für alle live sichtbar („✏️ Name tippt …“). Wer nur zuschaut, kann nichts ändern. Die Lehrkraft kann prüfen und Lösungen einsetzen (Lösungen bleiben auf dem Server).
-  Nur Aufgabe 4 (Schalenmodell) kommt als Karte mit der Elektronenzahl; dazu kann an der Tafel mit den Werkzeugen gezeichnet werden. Änderungen an der Tafel werden **nicht** ins AB zurückgeschrieben.
+- **Die Aufgabe an der Tafel ist bearbeitbar – passend zur Aufgabe:** Sie liegt dort mit den **Antworten aus dem AB**, und die zugeschaltete Person arbeitet direkt an der Tafel weiter; alle sehen es live
+  („✏️ Name tippt …“). Wer nur zuschaut, kann nichts ändern. Je Aufgabe gibt es die passende Bedienung:
+  Aufgabe 1 und 5 = **Tabelle** (Feld antippen → Tastatur; in Aufgabe 5 **Ankreuzfeld** antippen = Kreuz setzen/entfernen), Aufgabe 2 = **Lückentext** (Tastatur oder Wortbank), Aufgabe 3 = Tabelle mit
+  **Zifferntastatur**, Aufgabe 4 = **antippbares Schalenmodell** (Schale antippen = Elektron setzen, Elektron antippen = entfernen), Aufgabe 6 = **Textfeld**. Die Lehrkraft kann prüfen und Lösungen einsetzen
+  (Lösungen bleiben auf dem Server). Änderungen an der Tafel werden **nicht** ins AB zurückgeschrieben.
 - **Weitere Person dazuholen:** Läuft die Tafel, erscheint in der Leiste „➕ Dazuholen“: Die Person wird **zusätzlich** zugeschaltet (die bisherigen bleiben dran), ihre Aufgabe liegt daneben, und alle Zugeschalteten
   können in allen Aufgaben schreiben. „🖍️ An die Tafel“ dagegen lässt nur diese eine Person an der Tafel.
 - **Drei Ansichten für Dich (Schalter im Dashboard-Kopf, solange die Tafel läuft):** **🖍️ Tafel** (Vollbild), **◫ Geteilt** (Tafel links, Dashboard rechts – die Matrix bleibt im Blick, ein Klick auf einen Namen

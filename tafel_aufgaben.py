@@ -27,17 +27,19 @@ def _schalen(*zahlen):
 
 
 # Die Tafel-Fassungen entsprechen dem AB (gleiche Felder, gleiche Reihenfolge wie in ab_inhalt.html): Was eine Person
-# im AB eingetragen hat, steht an der Tafel schon in den Feldern und lässt sich dort per Tastatur ergänzen.
-# (Aufgabe 4 – Schalenmodell – hat keine Tafel-Fassung; sie kommt als Karte mit der gesetzten Elektronenzahl.)
+# im AB eingetragen hat, steht an der Tafel schon in den Feldern und lässt sich dort bearbeiten – je Aufgabe passend:
+#   tabelle (Aufgabe 1, 3, 5): Tabelle mit Eingabefeldern (Tastatur) und Ankreuzfeldern
+#   lueckentext (2) · freitext (6) · schalen (4): antippbares Schalenmodell
+# tabelle: spalten, breiten (Gewichte), zeilen = Zellen: str = fester Text, "F" = Eingabefeld, "Z" = Zifferneingabe,
+#          "H" = Ankreuzfeld; Felder heißen c0, c1, … in Lesereihenfolge (wie die Eingabefelder im AB).
 VARIANTEN = {
-    "1": {"titel": "Aufgabe 1 · Die Bausteine des Atoms", "typ": "lueckentext",
-          "teile": ["Proton (p⁺) – Ladung: ", None, ", Ort im Atom: ", None, ". Neutron (n) – Ladung: ", None,
-                    ", Ort im Atom: ", None, ". Elektron (e⁻) – Ladung: ", None, ", Ort im Atom: ", None, "."],
+    "1": {"titel": "Aufgabe 1 · Die Bausteine des Atoms", "typ": "tabelle", "frage": "Ergänze die Tabelle.",
+          "spalten": ["Teilchen", "Symbol", "Ladung", "Ort im Atom"], "breiten": [2, 1, 2, 2.4],
+          "zeilen": [["Proton", "p⁺", "F", "F"], ["Neutron", "n", "F", "F"], ["Elektron", "e⁻", "F", "F"]],
           "loesung": [["positiv", "+", "1+", "einfach positiv"], ["Kern", "Atomkern", "im Kern", "im Atomkern"],
                       ["neutral", "keine", "ungeladen", "0"], ["Kern", "Atomkern", "im Kern", "im Atomkern"],
                       ["negativ", "-", "1-", "einfach negativ"], ["Hülle", "Atomhülle", "Elektronenhülle",
-                                                                   "in der Hülle", "in der Atomhülle"]],
-          "wortbank": ["positiv", "neutral", "negativ", "Kern", "Hülle"]},
+                                                                   "in der Hülle", "in der Atomhülle"]]},
     "2": {"titel": "Aufgabe 2 · Lückentext", "typ": "lueckentext",
           "teile": ["Ein Atom besteht aus dem ", None, " und der ", None, ". Im Kern befinden sich die ", None,
                     " und die ", None, ". Die Ordnungszahl eines Elements gibt die Anzahl der ", None,
@@ -45,23 +47,26 @@ VARIANTEN = {
           "loesung": [["Kern", "Atomkern"], ["Hülle", "Atomhülle", "Elektronenhülle"],
                       ["Protonen", "Neutronen"], ["Neutronen", "Protonen"], ["Protonen"], ["Elektronen"]],
           "wortbank": ["Kern", "Hülle", "Protonen", "Neutronen", "Elektronen", "Ionen"]},
-    "3": {"titel": "Aufgabe 3 · Das Natrium-Atom", "typ": "lueckentext",
-          "teile": ["Natrium: Ordnungszahl 11, Massenzahl 23. Protonen: ", None, "  Neutronen: ", None,
-                    "  Elektronen: ", None, "  K-Schale: ", None, "  L-Schale: ", None, "  M-Schale: ", None],
-          "loesung": [["11"], ["12"], ["11"], ["2"], ["8"], ["1"]],
-          "wortbank": ["1", "2", "8", "11", "12", "23"]},
-    "5": {"titel": "Aufgabe 5 · Periodensystem", "typ": "lueckentext",
-          "teile": ["Lithium (Li, 3) – Elektronen pro Schale: ", None, ", Periode: ", None, ", Hauptgruppe: ", None,
-                    ", Alkalimetall: ", None, ". Kohlenstoff (C, 6) – Elektronen pro Schale: ", None, ", Periode: ",
-                    None, ", Hauptgruppe: ", None, ", Alkalimetall: ", None,
-                    ". Magnesium (Mg, 12) – Elektronen pro Schale: ", None, ", Periode: ", None,
-                    ", Hauptgruppe: ", None, ", Alkalimetall: ", None, ". Kalium (K, 19) – Elektronen pro Schale: ",
-                    None, ", Periode: ", None, ", Hauptgruppe: ", None, ", Alkalimetall: ", None, "."],
-          "loesung": [_schalen(2, 1), ["2"], ["1", "I"], ["ja", "x"],
-                      _schalen(2, 4), ["2"], ["4", "IV"], ["nein"],
-                      _schalen(2, 8, 2), ["3"], ["2", "II"], ["nein"],
-                      _schalen(2, 8, 8, 1), ["4"], ["1", "I"], ["ja", "x"]],
-          "wortbank": ["ja", "nein", "1", "2", "3", "4", "2,1", "2,4", "2,8,2", "2,8,8,1"]},
+    "3": {"titel": "Aufgabe 3 · Das Natrium-Atom", "typ": "tabelle",
+          "frage": "Natrium hat die Ordnungszahl 11 und die Massenzahl 23. Bestimme die Anzahl der Teilchen und die "
+                   "Verteilung der Elektronen auf die Schalen.",
+          "spalten": ["Protonen", "Neutronen", "Elektronen", "K-Schale", "L-Schale", "M-Schale"],
+          "zeilen": [["Z", "Z", "Z", "Z", "Z", "Z"]],
+          "loesung": [["11"], ["12"], ["11"], ["2"], ["8"], ["1"]]},
+    "4": {"titel": "Aufgabe 4 · Das Schalenmodell von Chlor", "typ": "schalen", "kern": "17p⁺",
+          "frage": "Zeichne die 17 Elektronen des Chlor-Atoms in das Schalenmodell ein. Tippe auf eine Schale, um ein "
+                   "Elektron zu setzen. Tippe auf ein Elektron, um es wieder zu entfernen.",
+          "loesung": [["2"], ["8"], ["7"]]},
+    "5": {"titel": "Aufgabe 5 · Periodensystem", "typ": "tabelle",
+          "frage": "Ergänze die Tabelle und kreuze an, welche Elemente Alkalimetalle sind.",
+          "spalten": ["Element", "Ordnungszahl", "Elektronen pro Schale", "Periode", "Hauptgruppe", "Alkalimetall"],
+          "breiten": [2.2, 1.9, 2.1, 1.4, 1.7, 1.7], "schrift": 19,
+          "zeilen": [["Lithium (Li)", "3", "F", "F", "F", "H"], ["Kohlenstoff (C)", "6", "F", "F", "F", "H"],
+                     ["Magnesium (Mg)", "12", "F", "F", "F", "H"], ["Kalium (K)", "19", "F", "F", "F", "H"]],
+          "loesung": [_schalen(2, 1), ["2"], ["1", "I"], ["true"],
+                      _schalen(2, 4), ["2"], ["4", "IV"], ["false"],
+                      _schalen(2, 8, 2), ["3"], ["2", "II"], ["false"],
+                      _schalen(2, 8, 8, 1), ["4"], ["1", "I"], ["true"]]},
     "6": {"titel": "Aufgabe 6 · Ähnliche Eigenschaften", "typ": "freitext",
           "frage": "Natrium (11) und Kalium (19) reagieren beide heftig mit Wasser. Erkläre mithilfe des Atombaus, "
                    "warum die beiden Elemente ähnliche Eigenschaften haben."},
@@ -96,6 +101,28 @@ def aufgabe_leer(aufgabe_id, niveau):
     elif typ == "zuordnung":
         daten.update(zeilen=[{"feld": f"z{i}", "text": t} for i, t in enumerate(f["links"])],
                      optionen=list(f["optionen"]))
+    elif typ == "tabelle":
+        n, zeilen = 0, []
+        for zeile in f["zeilen"]:
+            neu = []
+            for z in zeile:
+                if z in ("F", "Z", "H"):
+                    zelle = {"feld": f"c{n}"}
+                    n += 1
+                    if z == "H":
+                        zelle["art"] = "haken"
+                    if z == "Z":
+                        zelle["zahl"] = True
+                    neu.append(zelle)
+                else:
+                    neu.append({"text": z})
+            zeilen.append(neu)
+        daten.update(frage=f.get("frage", ""), spalten=list(f["spalten"]),
+                     breiten=list(f.get("breiten", [])), zeilen=zeilen, kartenbreite=700)
+        if f.get("schrift"):
+            daten["schrift"] = f["schrift"]
+    elif typ == "schalen":
+        daten.update(frage=f["frage"], kern=f["kern"], kartenbreite=640)
     elif typ == "mc":
         daten.update(frage=f["frage"], optionen=list(f["optionen"]))
     elif typ == "richtigfalsch":
@@ -112,6 +139,10 @@ def loesung(aufgabe_id, niveau):
     typ = f["typ"]
     if typ == "lueckentext":
         return {f"l{i}": list(alt) for i, alt in enumerate(f["loesung"])}
+    if typ == "tabelle":
+        return {f"c{i}": list(alt) for i, alt in enumerate(f["loesung"])}
+    if typ == "schalen":
+        return {f"s{i}": list(alt) for i, alt in enumerate(f["loesung"])}
     if typ == "zuordnung":
         return {f"z{i}": [f["loesung"][t]] for i, t in enumerate(f["links"])}
     if typ == "mc":
@@ -228,21 +259,24 @@ class AbAdapter:
             return None
         felder = self._felder(schueler_id)
         f = lambda a, n: self._f(felder, a, n)  # noqa: E731
-        if nr in ("1", "2", "3"):
-            werte = [f(int(nr), n) for n in range(1, 7)]
-        elif nr == "5":
-            werte = []
-            for i in range(4):
-                s, per, hg, alk = (f(5, 4 * i + k) for k in (1, 2, 3, 4))
-                werte += [s, per, hg, "ja" if alk == "true" else ("nein" if (s or per or hg) else "")]   # ungekreuzt = „nein“
-        else:
-            werte = None
         vorhanden = {}
-        if werte is not None:
-            for i, wert in enumerate(werte):
-                if wert:
-                    vorhanden[f"l{i}"] = wert[:60]
-        elif f(int(nr), 1):
+        if nr in ("1", "2", "3"):                                   # Eingabefelder 1:1 (Lücken l…, Tabellenfelder c…)
+            kuerzel = "l" if nr == "2" else "c"
+            for i in range(6):
+                if f(int(nr), i + 1):
+                    vorhanden[f"{kuerzel}{i}"] = f(int(nr), i + 1)[:60]
+        elif nr == "5":                                             # je Element: Schalen, Periode, Hauptgruppe, Kreuz
+            for i in range(4):
+                for k in range(3):
+                    if f(5, 4 * i + k + 1):
+                        vorhanden[f"c{4 * i + k}"] = f(5, 4 * i + k + 1)[:60]
+                if f(5, 4 * i + 4) == "true":
+                    vorhanden[f"c{4 * i + 3}"] = "true"
+        elif nr == "4":                                             # Elektronen je Schale
+            for k, n in enumerate(self._schalen(felder)):
+                if n:
+                    vorhanden[f"s{k}"] = str(min(n, 18))
+        elif f(int(nr), 1):                                         # Freitext
             vorhanden["text"] = f(int(nr), 1)[:2000]
         objekt["felder"] = {k: {"wert": w, "von_id": person.id, "von": person.name, "status": None, "alt": None}
                             for k, w in vorhanden.items()}
