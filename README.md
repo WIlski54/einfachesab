@@ -23,7 +23,7 @@ python app.py               # http://localhost:5000
 3. `VARIANTEN` in `tafel_aufgaben.py` neu schreiben – je AB-Aufgabe eine Tafel-Fassung mit Lösung
    (Typen: `lueckentext`, `tabelle`, `schalen`, `freitext`, …). **Regel:** Tafel-Feld *k* der Aufgabe *N* = AB-Eingabefeld
    `a<N>.f<k>`. Der Rest von `tafel_aufgaben.py` (Vorbelegung aus den AB-Antworten, Karten) ist themenunabhängig.
-4. `python tools/ab_pruefen.py` ausführen – prüft, dass AB, Tafel-Fassungen und Lösungen zusammenpassen.
+4. `python tools/ab_pruefen.py` ausführen – prüft, dass AB, Tafel-Fassungen und Lösungen zusammenpassen (inkl. Rundlauf mit der Musterlösung).
 
 ## Struktur
 

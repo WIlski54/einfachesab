@@ -8,12 +8,17 @@ Prüft, dass templates/ab_inhalt.html und tafel_aufgaben.py zusammenpassen:
   * Anzahl und Reihenfolge der Eingabefelder im AB == Felder der Tafel-Aufgabe (a<N>.f<k> = Tafel-Feld k)
   * Schalenmodell-Aufgaben haben das Widget (data-widget="bohr"), Freitext-Aufgaben genau 1 textarea
   * jede Lösung ist vollständig, wird vom Server akzeptiert und gilt für die eigene Musterlösung als „richtig“
+  * Rundlauf: Die Musterlösung wird wie von einer Schülerin ins AB „eingetippt“ (Tabelle `antworten`), der Adapter
+    füllt daraus die Tafel-Aufgabe vor – das Ergebnis muss vollständig als richtig gelten
   * AB_META ist vollständig
 Rückgabewert 0 = alles in Ordnung, 1 = Fehler (werden aufgelistet).
 """
+import json
 import os
 import re
+import sqlite3
 import sys
+import tempfile
 from html.parser import HTMLParser
 
 BASIS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,6 +58,49 @@ class _AB(HTMLParser):
     def handle_endtag(self, tag):
         if tag == "section":
             self.aufgabe = None
+
+
+def _rundlauf(nummern, fehler):
+    """Musterlösung ins (temporäre) AB eintragen → Adapter → Tafel-Aufgabe muss richtig sein."""
+    pfad = os.path.join(tempfile.mkdtemp(), "t.db")
+    verb = lambda: sqlite3.connect(pfad)  # noqa: E731
+    db = verb()
+    db.execute("CREATE TABLE antworten (schueler_id TEXT, feld TEXT, wert TEXT)")
+    for nr in nummern:
+        v = ta.VARIANTEN[nr]
+        o = ta.aufgabe_leer(nr, ta.KNOPF)
+        l = ta.loesung(nr, ta.KNOPF) or {}
+        if v["typ"] == "schalen":
+            punkte = [{"r": k, "w": i} for k in range(3) for i in range(int(l[f"s{k}"][0]))]
+            db.execute("INSERT INTO antworten VALUES ('s',?,?)", (f"a{nr}.w1", json.dumps(punkte)))
+        elif v["typ"] == "freitext":
+            db.execute("INSERT INTO antworten VALUES ('s',?,?)", (f"a{nr}.f1", "Beispielantwort"))
+        else:
+            for k, fid in enumerate(feld_ids(o), start=1):
+                db.execute("INSERT INTO antworten VALUES ('s',?,?)", (f"a{nr}.f{k}", l[fid][0]))
+    db.commit()
+    db.close()
+    ad = ta.AbAdapter(verb, len(nummern))
+    try:
+        karten = ad.aufgaben_des_schuelers("s")
+    except Exception as e:  # noqa: BLE001
+        fehler.append(f"Rundlauf: aufgaben_des_schuelers wirft {type(e).__name__}: {e}")
+        return
+    if len(karten) != len(nummern) or not all(k["bearbeitet"] for k in karten):
+        fehler.append("Rundlauf: nicht jede Aufgabe wurde aus dem AB übernommen (Reihenfolge der Felder prüfen).")
+    for nr in nummern:
+        v = ta.VARIANTEN[nr]
+        if v["typ"] == "freitext":
+            continue
+        o = ad.aufgabe_befuellt("s", nr, _Person)
+        _, z = pruefen(o, loesung_bereinigen(o, ta.loesung(nr, ta.KNOPF)))
+        if z["falsch"]:
+            fehler.append(f"Rundlauf Aufgabe {nr}: Musterlösung aus dem AB vorbelegt, aber {z['falsch']} Feld(er) falsch "
+                          f"– Feldreihenfolge im AB passt nicht zur Tafel-Fassung.")
+
+
+class _Person:
+    id, name = "p", "Test"
 
 
 def main():
@@ -119,6 +167,9 @@ def main():
         _, z = pruefen(o, l)
         if z["falsch"]:
             fehler.append(f"Aufgabe {nr}: die eigene Musterlösung wird als falsch gewertet ({z}).")
+
+    if not fehler:
+        _rundlauf(nummern, fehler)
 
     meta = open(os.path.join(BASIS, "app.py"), encoding="utf-8").read()
     for k in ("schule", "titel", "fach", "klasse"):
