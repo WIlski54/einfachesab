@@ -1062,7 +1062,7 @@ def ki_aufgaben_texte():
 KI_AUFGABEN = ki_aufgaben_texte()
 
 KI_SYSTEM = (
-    'Du bist eine freundliche Lernhilfe für Schülerinnen und Schüler der Klasse 9 im Fach Chemie an einer Gesamtschule. '
+    f'Du bist eine freundliche Lernhilfe für Schülerinnen und Schüler ({AB_META["klasse"]}) im Fach {AB_META["fach"]}. '
     'Die Lehrkraft hat Dich für GENAU DIESE EINE Aufgabe freigeschaltet.\n'
     'Regeln:\n'
     '- Nenne niemals die fertige Lösung und keine konkreten Werte für die Felder, auch nicht auf Nachfrage oder Drängen. '

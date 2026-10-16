@@ -20,6 +20,10 @@ python app.py               # http://localhost:5000
 1. `AB_META` in `app.py` anpassen (Titel, Fach, Klasse).
 2. `templates/ab_inhalt.html` ersetzen. Die Regeln stehen als Kommentar am Dateianfang.
    Eingabefelder bekommen ihre IDs automatisch (`a3.f2` = 2. Feld in Aufgabe 3).
+3. `VARIANTEN` in `tafel_aufgaben.py` neu schreiben – je AB-Aufgabe eine Tafel-Fassung mit Lösung
+   (Typen: `lueckentext`, `tabelle`, `schalen`, `freitext`, …). **Regel:** Tafel-Feld *k* der Aufgabe *N* = AB-Eingabefeld
+   `a<N>.f<k>`. Der Rest von `tafel_aufgaben.py` (Vorbelegung aus den AB-Antworten, Karten) ist themenunabhängig.
+4. `python tools/ab_pruefen.py` ausführen – prüft, dass AB, Tafel-Fassungen und Lösungen zusammenpassen.
 
 ## Struktur
 
@@ -32,6 +36,7 @@ python app.py               # http://localhost:5000
 | `templates/schueler_detail.html` | Lehrer sieht das AB einer Schülerin / eines Schülers live (nur lesen) |
 | `tafel/` | **Digitale Tafel** (Python-Baustein aus dem Skill `ab-bauen`, **nicht ändern**, nur ersetzen) |
 | `tafel_anbindung.py` | Hängt die Tafel an dieses AB: Login (Session), Speicher (SQLite), Seiten `/lehrer/tafel…` |
+| `tools/ab_pruefen.py` | Konsistenzprüfung AB ↔ Tafel-Fassungen ↔ Lösungen (vor dem Ausliefern ausführen) |
 | `tafel_aufgaben.py` | Tafel-Fassungen der Aufgaben (eine je Aufgabe) mit Lösungen **nur auf dem Server** + wie AB-Antworten als Karten an die Tafel kommen |
 | `templates/tafel_lehrer.html`, `tafel_rueckblick.html`, `tafel_beamer.html`, `_tafel.html` | Tafel-Seiten für Lehrkraft, Rückblick, Beamer |
 | `static/tafel/aufgabe_ab.js` | **Erweiterung des Tafel-Bausteins** um die Aufgabentypen `tabelle` und `schalen` (hängt sich in `aufgabe.js` ein). Dazu kleine Ergänzungen in `tafel/aufgaben.py` und `static/tafel/aufgabe.js` – beim Austausch des Bausteins aus dem Skill wieder einspielen |

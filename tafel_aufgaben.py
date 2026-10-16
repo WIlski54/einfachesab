@@ -5,11 +5,14 @@ baut, ändert hier die Tafel-Fassungen. Die Lösungen bleiben auf dem Server und
 Schüler:innen.
 
 Zwei Dinge sind hier beschrieben:
-1. AUFGABEN_AB    – wie die Antworten aus dem AB als „Karte“ an die Tafel kommen
-                    (Feldnummern = Reihenfolge der Eingabefelder in ab_inhalt.html: a<Aufgabe>.f<Nr>).
-2. VARIANTEN      – die leeren Tafel-Aufgaben (eine Fassung je Aufgabe) samt Lösung, die live gelöst werden.
+1. VARIANTEN      – die leeren Tafel-Aufgaben (eine Fassung je Aufgabe) samt Lösung, die live gelöst werden.
+                    Das ist der EINZIGE Teil, der für ein neues Arbeitsblatt neu geschrieben wird.
+2. AbAdapter      – inhaltsunabhängig: liest die AB-Antworten und füllt damit die Tafel-Aufgaben vor.
+                    Regel: Tafel-Feld k einer Aufgabe N = AB-Eingabefeld a<N>.f<k> (Reihenfolge in ab_inhalt.html).
 """
 import json
+
+from tafel.aufgaben import feld_ids, zelle
 
 # Es gibt bewusst nur EINE Fassung je Aufgabe (keine Niveaus A/B/C). Die Tafel braucht aber einen Schlüssel
 # für den Knopf in der Aufgabenliste; er steht nur dort (Knopftext) und erscheint nicht auf der Tafel.
@@ -152,13 +155,16 @@ def loesung(aufgabe_id, niveau):
     return None
 
 
-# ---------- Antworten aus dem AB (Karten) ----------
-ELEMENTE = ("Lithium (Li)", "Kohlenstoff (C)", "Magnesium (Mg)", "Kalium (K)")
-SCHALEN = ("K", "L", "M")
+# ---------- Antworten aus dem AB (Karten und vorbelegte Tafel-Aufgaben) ----------
+# Dieser Teil ist INHALTSUNABHÄNGIG – er liest nur VARIANTEN. Regel: Die Felder einer Tafel-Aufgabe stehen in derselben
+# Reihenfolge wie die Eingabefelder (input/textarea) dieser Aufgabe in ab_inhalt.html (AB-Feld a<N>.f<k> = k-tes Tafel-Feld).
+# Sonderfälle: Schalenmodell (typ "schalen") liest das Widget a<N>.w1, Freitext (typ "freitext") das Feld a<N>.f1.
+class _Anonym:
+    id, name, ist_lehrer = "", "", False
 
 
 class AbAdapter:
-    """Liest die Antworten einer Person aus der Tabelle `antworten` und liefert sie als Tafel-Karten."""
+    """Liest die Antworten einer Person aus der Tabelle `antworten` und liefert sie als Tafel-Karten bzw. Tafel-Aufgaben."""
 
     def __init__(self, get_db, anzahl_aufgaben):
         self.get_db = get_db
@@ -187,13 +193,10 @@ class AbAdapter:
             db.close()
 
     @staticmethod
-    def _f(felder, nr, n):
-        wert = (felder.get(f"a{nr}.f{n}") or "").strip()
-        return "" if wert == "false" else wert
-
-    def _schalen(self, felder):
+    def _schalen(felder, nr):
+        """Elektronen je Schale aus dem Schalenmodell-Widget des ABs (Punkte {r: Schale, w: Winkel})."""
         try:
-            punkte = json.loads(felder.get("a4.w1") or "[]")
+            punkte = json.loads(felder.get(f"a{nr}.w1") or "[]")
         except ValueError:
             punkte = []
         zaehler = [0, 0, 0]
@@ -202,86 +205,72 @@ class AbAdapter:
                 zaehler[p["r"]] += 1
         return zaehler
 
-    def aufgaben_des_schuelers(self, schueler_id):
-        felder = self._felder(schueler_id)
-        f = lambda nr, n: self._f(felder, nr, n)  # noqa: E731
-        ergebnis = []
-
-        def karte(nr, titel, typ, inhalt, bearbeitet):
-            ergebnis.append({"aufgabe_id": str(nr), "titel": titel, "typ": typ, "niveau": "",
-                             "bearbeitet": bool(bearbeitet), "inhalt": inhalt})
-
-        # 1: Tabelle Teilchen / Ladung / Ort
-        paare = [[t, " · ".join(x for x in (f(1, 2 * i + 1), f(1, 2 * i + 2)) if x) or "…"]
-                 for i, t in enumerate(("Proton", "Neutron", "Elektron"))]
-        karte(1, "Aufgabe 1 · Die Bausteine des Atoms", "zuordnung", {"paare": paare},
-              any(f(1, n) for n in range(1, 7)))
-        # 2: Lückentext (Text wie in ab_inhalt.html)
-        teile = VARIANTEN["2"]["teile"]
-        luecken = [f(2, n) for n in range(1, 7)]
-        segmente, i = [], 0
-        for teil in teile:
-            if teil is None:
-                segmente.append({"luecke": luecken[i] or "…"})
-                i += 1
-            else:
-                segmente.append({"text": teil})
-        karte(2, "Aufgabe 2 · Lückentext", "lueckentext", {"segmente": segmente}, any(luecken))
-        # 3: Natrium-Atom
-        w = [f(3, n) or "…" for n in range(1, 7)]
-        karte(3, "Aufgabe 3 · Das Natrium-Atom", "freitext",
-              {"text": f"Protonen: {w[0]} · Neutronen: {w[1]} · Elektronen: {w[2]}\n"
-                       f"K: {w[3]} · L: {w[4]} · M: {w[5]}"},
-              any(f(3, n) for n in range(1, 7)))
-        # 4: Schalenmodell
-        z = self._schalen(felder)
-        karte(4, "Aufgabe 4 · Das Schalenmodell von Chlor", "freitext",
-              {"text": f"{sum(z)} Elektronen gesetzt (K: {z[0]} · L: {z[1]} · M: {z[2]})"}, sum(z) > 0)
-        # 5: Periodensystem
-        paare, bearbeitet = [], False
-        for i, name in enumerate(ELEMENTE):
-            s, per, hg, alk = (f(5, 4 * i + k) for k in (1, 2, 3, 4))
-            bearbeitet = bearbeitet or any((s, per, hg, alk))
-            paare.append([name, f"Schalen {s or '…'} · Periode {per or '…'} · Gruppe {hg or '…'}"
-                                f" · {'Alkalimetall' if alk == 'true' else 'kein Alkalimetall'}"])
-        karte(5, "Aufgabe 5 · Periodensystem", "zuordnung", {"paare": paare}, bearbeitet)
-        # 6: Freitext
-        text = f(6, 1)
-        karte(6, "Aufgabe 6 · Ähnliche Eigenschaften", "freitext", {"text": text}, text)
-        return ergebnis
-
     def aufgabe_befuellt(self, schueler_id, aufgabe_id, person):
-        """Die Tafel-Aufgabe, in der schon steht, was die Person im AB eingetragen hat (oder None, wenn es für diese
-        Aufgabe keine Tafel-Fassung gibt). Die Felder bleiben an der Tafel per Tastatur bearbeitbar."""
+        """Die Tafel-Aufgabe, in der schon steht, was die Person im AB eingetragen hat (None, wenn es keine
+        Tafel-Fassung gibt). Die Felder bleiben an der Tafel bearbeitbar."""
         nr = str(aufgabe_id)
         objekt = aufgabe_leer(nr, KNOPF)
         if objekt is None:
             return None
         felder = self._felder(schueler_id)
-        f = lambda a, n: self._f(felder, a, n)  # noqa: E731
+        typ = objekt["aufgabentyp"]
         vorhanden = {}
-        if nr in ("1", "2", "3"):                                   # Eingabefelder 1:1 (Lücken l…, Tabellenfelder c…)
-            kuerzel = "l" if nr == "2" else "c"
-            for i in range(6):
-                if f(int(nr), i + 1):
-                    vorhanden[f"{kuerzel}{i}"] = f(int(nr), i + 1)[:60]
-        elif nr == "5":                                             # je Element: Schalen, Periode, Hauptgruppe, Kreuz
-            for i in range(4):
-                for k in range(3):
-                    if f(5, 4 * i + k + 1):
-                        vorhanden[f"c{4 * i + k}"] = f(5, 4 * i + k + 1)[:60]
-                if f(5, 4 * i + 4) == "true":
-                    vorhanden[f"c{4 * i + 3}"] = "true"
-        elif nr == "4":                                             # Elektronen je Schale
-            for k, n in enumerate(self._schalen(felder)):
+        if typ == "schalen":
+            for k, n in enumerate(self._schalen(felder, nr)):
                 if n:
                     vorhanden[f"s{k}"] = str(min(n, 18))
-        elif f(int(nr), 1):                                         # Freitext
-            vorhanden["text"] = f(int(nr), 1)[:2000]
+        elif typ == "freitext":
+            wert = (felder.get(f"a{nr}.f1") or "").strip()
+            if wert:
+                vorhanden["text"] = wert[:2000]
+        else:                                                        # Lückentext, Tabelle, …: Feld k = AB-Feld k
+            for k, fid in enumerate(feld_ids(objekt), start=1):
+                wert = (felder.get(f"a{nr}.f{k}") or "").strip()
+                if zelle(objekt, fid).get("art") == "haken":         # Ankreuzfeld: nur „angekreuzt“ übernehmen
+                    wert = "true" if wert == "true" else ""
+                elif wert == "false":
+                    wert = ""
+                if wert:
+                    vorhanden[fid] = wert[:60]
         objekt["felder"] = {k: {"wert": w, "von_id": person.id, "von": person.name, "status": None, "alt": None}
                             for k, w in vorhanden.items()}
         objekt["quelle"] = schueler_id
         return objekt
+
+    @staticmethod
+    def _karte_inhalt(o):
+        """Antwort als Karte (Lückentext → Segmente, Tabelle → Zeilenpaare, sonst Text)."""
+        wert = lambda fid: ((o.get("felder") or {}).get(fid) or {}).get("wert", "")  # noqa: E731
+        typ = o["aufgabentyp"]
+        if typ == "lueckentext":
+            return "lueckentext", {"segmente": [{"luecke": wert(t["feld"]) or "…"} if "feld" in t else {"text": t["text"]}
+                                                 for t in o["teile"]]}
+        if typ == "tabelle":
+            def zeige(z):
+                if "feld" not in z:
+                    return z.get("text", "")
+                w = wert(z["feld"])
+                return ("✓" if w == "true" else "–") if z.get("art") == "haken" else (w or "…")
+            paare = []
+            for zeile in o["zeilen"]:
+                if zeile and "feld" not in zeile[0]:
+                    paare.append([zeile[0]["text"], " · ".join(zeige(z) for z in zeile[1:])])
+                else:
+                    paare += [[(o["spalten"][i] if i < len(o["spalten"]) else ""), zeige(z)] for i, z in enumerate(zeile)]
+            return "zuordnung", {"paare": paare}
+        if typ == "schalen":
+            n = [int(wert(f"s{k}") or 0) for k in range(3)]
+            return "freitext", {"text": f"{sum(n)} Elektronen gesetzt (" + " · ".join(f"Schale {k + 1}: {x}" for k, x in enumerate(n)) + ")"}
+        return "freitext", {"text": wert("text") or "…"}
+
+    def aufgaben_des_schuelers(self, schueler_id):
+        ergebnis = []
+        for nr, v in VARIANTEN.items():
+            o = self.aufgabe_befuellt(schueler_id, nr, _Anonym)
+            typ, inhalt = self._karte_inhalt(o)
+            ergebnis.append({"aufgabe_id": nr, "titel": v["titel"], "typ": typ, "niveau": "",
+                             "bearbeitet": bool(o["felder"]), "inhalt": inhalt})
+        return ergebnis
 
     def aufgabe_des_schuelers(self, schueler_id, aufgabe_id):
         return next((a for a in self.aufgaben_des_schuelers(schueler_id) if a["aufgabe_id"] == str(aufgabe_id)), None)
